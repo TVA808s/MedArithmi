@@ -33,7 +33,6 @@ export function SettingsScreen() {
       <View style={styles.content}>
         <Text style={styles.sectionTitle}>Размер текста</Text>
         
-        {/* Радиогруппа для выбора размера текста */}
         <View style={styles.radioGroup}>
           <TouchableOpacity 
             style={styles.radioOption} 
@@ -66,7 +65,6 @@ export function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Чекбокс для разрешения аналитики */}
         <View style={styles.analyticsSection}>
           <TouchableOpacity 
             style={styles.checkboxContainer}

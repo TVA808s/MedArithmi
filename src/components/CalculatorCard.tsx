@@ -10,22 +10,23 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { ScreensList } from '../types/navigation';
-import Icons from './Icons'
+import Icon, { IconName } from './Icons';
+
 interface CalculatorCardProps {
   id: string;
   title: string;
-  icon: object;
+  icon: IconName;
   description?: string;
-  // Режим работы карточки
+  // режимы карточки
   mode?: 'navigate' | 'expand'; 
-  // Для режима expand - данные для отображения
+  // данные для раскрывающейся карточки в истории
   resultData?: {
     value: number;
     unit: string;
     interpretation: string;
     color: string;
   };
-  // Для режима navigate - название экрана для перехода
+  // страница перехода для карточек в меню
   navigateTo?: keyof ScreensList;
 }
 
@@ -44,7 +45,7 @@ export const CalculatorCard: React.FC<CalculatorCardProps> = ({
   const [expanded, setExpanded] = useState(false);
   const [animation] = useState(new Animated.Value(0));
 
-  // Заглушечные данные для демонстрации
+  // заглушка
   const defaultResultData = {
     value: 24.5,
     unit: 'кг/м²',
@@ -75,19 +76,11 @@ export const CalculatorCard: React.FC<CalculatorCardProps> = ({
     }
   };
 
-  // Анимация высоты для раскрывающейся части
+  // анимация раскрытия карточки
   const contentHeight = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 140], // Высота раскрывающейся части
+    outputRange: [0, 140], // высота раскрытия
   });
-
-
-  // Эмуляция иконки (замените на ваш компонент Icon)
-  const renderIcon = () => (
-    <View style={styles.iconContainer}>
-      
-    </View>
-  );
 
   return (
     <TouchableOpacity
@@ -96,11 +89,17 @@ export const CalculatorCard: React.FC<CalculatorCardProps> = ({
       activeOpacity={0.8}
     >
       <View style={styles.cardHeader}>
-        {renderIcon()}
+        <Icon 
+          name={icon} 
+          size={60} 
+          color="#CA6C44"
+          style={styles.icon}
+          onPress={handlePress}
+        />
         <View style={styles.textContainer}>
-          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.title} numberOfLines={1}>{title}</Text>
           {description ? (
-            <Text style={styles.description}>{description}</Text>
+            <Text style={styles.description} numberOfLines={2}>{description}</Text>
           ) : null}
         </View>
       </View>
@@ -147,8 +146,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  iconContainer: {
-    width: '25%',
+  icon: {
+    width: 60,
     height: 60,
     justifyContent: 'center',
     alignItems: 'center',
@@ -159,7 +158,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'sans-serif-medium',
     fontSize: 18,
-    color: '#333',
+    color: '#CA6C44',
     fontWeight: '500',
   },
   description: {

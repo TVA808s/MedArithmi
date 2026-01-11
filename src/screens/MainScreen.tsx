@@ -6,60 +6,80 @@ import {
   TextInput,
   SafeAreaView,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { ScreensList } from '../types/navigation';
-import Icon from '../components/Icons';
+import Icon, { IconName } from '../components/Icons'; 
 import { CalculatorCard } from '../components/CalculatorCard';
-import { ScrollView } from 'react-native-gesture-handler';
 
 // необходима типизация переменной navigation
 type MainScreenNavigationProp = StackNavigationProp<ScreensList, 'Main'>;
-
 
 export function MainScreen() {
     const navigation = useNavigation<MainScreenNavigationProp>();
     const [searchQuery, setSearchQuery] = useState('');
 
     // заглушка калькуляторов
-    const calculators = [
+  const calculators = [
     {
       id: '1',
       title: '(ИМТ) Индекс массы тела',
-      iconName: 'BMI',
+      icon: 'bmi' as IconName,
       description: 'Расчет индекса массы тела',
-      navigateTo: 'BMICalculator',
+      navigateTo: 'Calculator' as keyof ScreensList,
+      category: 'Повседневная практика'
     },
     {
       id: '2',
-      title: '(САД) Среднее артериальное давление',
-      iconName: 'CR',
-      description: 'Расчет скорости клубочковой фильтрации',
-      navigateTo: 'CreatinineCalculator',
+      title: 'Шкала CURB-65',
+      icon: 'curb' as IconName,
+      description: 'Оценка тяжести пневмонии',
+      navigateTo: 'Calculator' as keyof ScreensList,
+      category: 'Повседневная практика'
     },
     {
       id: '3',
-      title: 'CURB-65 оценка пневмони',
-      iconName: 'DB',
-      description: 'Расчет уровня глюкозы',
-      navigateTo: 'DiabetesCalculator',
+      title: 'Риск кровотечения HAS-BLEED',
+      icon: 'droplet' as IconName,
+      description: 'Оценка риска кровотечения',
+      navigateTo: 'Calculator' as keyof ScreensList,
+      category: 'Кардиология и ангиология'
     },
     {
       id: '4',
-      title: 'Риск инсульта CHA2DS2-VACS',
-      iconName: 'BP',
-      description: 'Анализ артериального давления',
-      navigateTo: 'PressureCalculator',
+      title: '(САД) Среднее артериальное давление',
+      icon: 'heart' as IconName,
+      description: 'Мониторинг давления',
+      navigateTo: 'Calculator' as keyof ScreensList,
+      category: 'Повседневная практика'
     },
     {
       id: '5',
-      title: 'Риск кровотечения HAS-BLEED',
-      iconName: 'CH',
-      description: 'Анализ липидного профиля',
-      navigateTo: 'CholesterolCalculator',
+      title: 'Риск инсульта CHA₂DS₂-VACₛ',
+      icon: 'lightning' as IconName,
+      description: 'Оценка риска инсульта',
+      navigateTo: 'Calculator' as keyof ScreensList,
+      category: 'Кардиология и ангиология'
+    },
+    {
+      id: '6',
+      title: '(СКФ) Скорость клубочковой фильтрации по формуле CKD-EPI',
+      icon: 'skf' as IconName,
+      description: 'СКФ по формуле CKD-EPI',
+      navigateTo: 'Calculator' as keyof ScreensList,
+      category: 'Нефрология'
     },
   ];
+
+  const groupedCalculators = calculators.reduce((acc, calc) => {
+    if (!acc[calc.category]) {
+      acc[calc.category] = [];
+    }
+    acc[calc.category].push(calc);
+    return acc;
+  }, {} as Record<string, typeof calculators>);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -80,25 +100,29 @@ export function MainScreen() {
         </View>
       </View>
       
-
-
       {/* Основной контент */}
       <View style={styles.content}>
-        <Text style={styles.welcomeText}>Добро пожаловать!</Text>
-
-        {calculators.map((calc) => (
-          <CalculatorCard
-            key={calc.id}
-            id={calc.id}
-            title={calc.title}
-            iconName={calc.iconName}
-            mode="navigate"
-            navigateTo={calc.navigateTo}
-          />
-        ))}
+        <ScrollView 
+          contentContainerStyle={styles.scrollViewContent}
+        >
+          {Object.entries(groupedCalculators).map(([category, calcs]) => (
+            <React.Fragment key={category}>
+              <Text style={styles.categoryTitle}>{category}</Text>
+              {calcs.map(calc => (
+                <CalculatorCard
+                  key={calc.id}
+                  id={calc.id}
+                  title={calc.title}
+                  icon={calc.icon}
+                  description={calc.description}
+                  mode="navigate"
+                  navigateTo={calc.navigateTo}
+                />
+              ))}
+            </React.Fragment>
+          ))}
+        </ScrollView>
       </View>
-      
-
 
       {/* Нижний бар */}
       <View style={styles.bottomBar}>
@@ -136,7 +160,6 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-
     elevation: 10,
   },
   searchContainer: {
@@ -151,17 +174,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#838383',
     fontFamily: 'sans-serif-light',
+    marginLeft: 8,
   },
   content: {
     flex: 1,
     paddingVertical: 20,
-    gap: 20,
-    alignItems: 'center',
   },
-  welcomeText: {
+  scrollViewContent: {
+    alignItems: 'center',
+    gap: 15,
+    paddingBottom: 20,
+  },
+  categoryTitle: {
     fontFamily: 'sans-serif-light',
     fontSize: 24,
     color: '#7A7A7A',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 5,
   },
   bottomBar: {
     flexDirection: 'row',
@@ -174,5 +204,4 @@ const styles = StyleSheet.create({
     borderTopWidth: 5,
     borderTopLeftRadius: 10,
   },
-
 });
