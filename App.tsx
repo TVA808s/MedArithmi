@@ -1,5 +1,5 @@
 // App.tsx
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView, StatusBar } from 'react-native';
 import Navigation from './src/navigation/navigation';
 
 const App = () => {

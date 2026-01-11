@@ -15,39 +15,28 @@ const Navigation = () => {
       <Stack.Navigator 
         initialRouteName="Loading"
         screenOptions={{
-          headerStyle: {
-            backgroundColor: '#2196F3',
-          },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
+          headerShown: false,
         }}
       >
         <Stack.Screen 
           name="Loading" 
           component={LoadingScreen}
-          options={{ headerShown: false }}
         />
         <Stack.Screen 
           name="Main" 
           component={MainScreen}
-          options={{ title: 'MedArithmi' }}
         />
         <Stack.Screen 
           name="Calculator" 
           component={CalculatorScreen}
-          options={{ title: 'Калькулятор' }}
         />
         <Stack.Screen 
           name="Settings" 
           component={SettingsScreen}
-          options={{ title: 'Настройки' }}
         />
         <Stack.Screen 
           name="History" 
           component={HistoryScreen}
-          options={{ title: 'История' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

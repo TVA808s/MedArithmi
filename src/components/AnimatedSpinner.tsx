@@ -27,7 +27,7 @@ export const AnimatedCircleSpinner = ({
   
   const size = 100;
   const strokeWidth = 3;
-  const radius = 48.5; // (100/2) - 3
+  const radius = 48.5; 
   
   return (
     <Animated.View style={{ 
@@ -44,7 +44,7 @@ export const AnimatedCircleSpinner = ({
           stroke={color}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          strokeDasharray="114 38" // Оптимально для 100px
+          strokeDasharray="114 38" 
         />
       </Svg>
     </Animated.View>
