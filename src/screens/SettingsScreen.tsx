@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,23 +7,28 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
-import type { ScreensList } from '../types/navigation';
+import {useNavigation} from '@react-navigation/native';
+import type {StackNavigationProp} from '@react-navigation/stack';
+import type {ScreensList} from '../types/navigation';
 import Icon from '../components/Icons';
 
 // необходима типизация переменной navigation
-type SettingsScreenNavigationProp = StackNavigationProp<ScreensList, 'Settings'>;
+type SettingsScreenNavigationProp = StackNavigationProp<
+  ScreensList,
+  'Settings'
+>;
 
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const [selectedFontSize, setSelectedFontSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [selectedFontSize, setSelectedFontSize] = useState<
+    'small' | 'medium' | 'large'
+  >('medium');
   const [allowAnalytics, setAllowAnalytics] = useState<boolean>(false);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF1D7" />
-      
+
       {/* Верхний бар */}
       <View style={styles.topBar}>
         <Text style={styles.text}>настройки</Text>
@@ -32,44 +37,46 @@ export function SettingsScreen() {
       {/* Основной контент */}
       <View style={styles.content}>
         <Text style={styles.sectionTitle}>Размер текста</Text>
-        
+
         <View style={styles.radioGroup}>
-          <TouchableOpacity 
-            style={styles.radioOption} 
-            onPress={() => setSelectedFontSize('small')}
-          >
+          <TouchableOpacity
+            style={styles.radioOption}
+            onPress={() => setSelectedFontSize('small')}>
             <View style={styles.radioOuter}>
-              {selectedFontSize === 'small' && <View style={styles.radioInner} />}
+              {selectedFontSize === 'small' && (
+                <View style={styles.radioInner} />
+              )}
             </View>
             <Text style={styles.radioLabel}>Маленький</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.radioOption} 
-            onPress={() => setSelectedFontSize('medium')}
-          >
+          <TouchableOpacity
+            style={styles.radioOption}
+            onPress={() => setSelectedFontSize('medium')}>
             <View style={styles.radioOuter}>
-              {selectedFontSize === 'medium' && <View style={styles.radioInner} />}
+              {selectedFontSize === 'medium' && (
+                <View style={styles.radioInner} />
+              )}
             </View>
             <Text style={styles.radioLabel}>Средний</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.radioOption} 
-            onPress={() => setSelectedFontSize('large')}
-          >
+          <TouchableOpacity
+            style={styles.radioOption}
+            onPress={() => setSelectedFontSize('large')}>
             <View style={styles.radioOuter}>
-              {selectedFontSize === 'large' && <View style={styles.radioInner} />}
+              {selectedFontSize === 'large' && (
+                <View style={styles.radioInner} />
+              )}
             </View>
             <Text style={styles.radioLabel}>Крупный</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.analyticsSection}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.checkboxContainer}
-            onPress={() => setAllowAnalytics(!allowAnalytics)}
-          >
+            onPress={() => setAllowAnalytics(!allowAnalytics)}>
             <View style={styles.checkboxOuter}>
               {allowAnalytics && <Text style={styles.checkmark}>✓</Text>}
             </View>
@@ -81,24 +88,27 @@ export function SettingsScreen() {
 
         <View style={styles.privacySection}>
           <Text style={styles.privacyTitle}>Мы ценим вашу приватность.</Text>
-          <Text style={styles.privacyText}> 
-            •   Медицинские расчеты: Все вводимые вами данные (вес, рост, лабораторные показатели) обрабатываются локально на вашем устройстве и не отправляются на наши сервера для хранения.
+          <Text style={styles.privacyText}>
+            • Медицинские расчеты: Все вводимые вами данные (вес, рост,
+            лабораторные показатели) обрабатываются локально на вашем устройстве
+            и не отправляются на наши сервера для хранения.
           </Text>
           <Text style={styles.privacyText}>
-            •   Аналитика: Мы собираем анонимные данные об использовании функций приложения (без ваших персональных данных) для улучшения сервиса.
+            • Аналитика: Мы собираем анонимные данные об использовании функций
+            приложения (без ваших персональных данных) для улучшения сервиса.
           </Text>
         </View>
       </View>
 
       {/* Нижний бар */}
       <View style={styles.bottomBar}>
-        <Icon 
-          name="back" 
+        <Icon
+          name="back"
           onPress={() => {
             navigation.navigate('Main');
           }}
         />
-        <Icon 
+        <Icon
           name="history"
           onPress={() => {
             navigation.navigate('History');
@@ -135,7 +145,7 @@ const styles = StyleSheet.create({
     fontWeight: '200',
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 2, height: 2 },
+    textShadowOffset: {width: 2, height: 2},
     textShadowRadius: 4,
   },
   content: {

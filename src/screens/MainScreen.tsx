@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -8,20 +8,20 @@ import {
   StatusBar,
   ScrollView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
-import type { ScreensList } from '../types/navigation';
-import Icon, { IconName } from '../components/Icons'; 
-import { CalculatorCard } from '../components/CalculatorCard';
+import {useNavigation} from '@react-navigation/native';
+import type {StackNavigationProp} from '@react-navigation/stack';
+import type {ScreensList} from '../types/navigation';
+import Icon, {IconName} from '../components/Icons';
+import {CalculatorCard} from '../components/CalculatorCard';
 
 // необходима типизация переменной navigation
 type MainScreenNavigationProp = StackNavigationProp<ScreensList, 'Main'>;
 
 export function MainScreen() {
-    const navigation = useNavigation<MainScreenNavigationProp>();
-    const [searchQuery, setSearchQuery] = useState('');
+  const navigation = useNavigation<MainScreenNavigationProp>();
+  const [searchQuery, setSearchQuery] = useState('');
 
-    // заглушка калькуляторов
+  // заглушка калькуляторов
   const calculators = [
     {
       id: '1',
@@ -29,7 +29,7 @@ export function MainScreen() {
       icon: 'bmi' as IconName,
       description: 'Расчет индекса массы тела',
       navigateTo: 'Calculator' as keyof ScreensList,
-      category: 'Повседневная практика'
+      category: 'Повседневная практика',
     },
     {
       id: '2',
@@ -37,7 +37,7 @@ export function MainScreen() {
       icon: 'curb' as IconName,
       description: 'Оценка тяжести пневмонии',
       navigateTo: 'Calculator' as keyof ScreensList,
-      category: 'Повседневная практика'
+      category: 'Повседневная практика',
     },
     {
       id: '3',
@@ -45,7 +45,7 @@ export function MainScreen() {
       icon: 'droplet' as IconName,
       description: 'Оценка риска кровотечения',
       navigateTo: 'Calculator' as keyof ScreensList,
-      category: 'Кардиология и ангиология'
+      category: 'Кардиология и ангиология',
     },
     {
       id: '4',
@@ -53,7 +53,7 @@ export function MainScreen() {
       icon: 'heart' as IconName,
       description: 'Мониторинг давления',
       navigateTo: 'Calculator' as keyof ScreensList,
-      category: 'Повседневная практика'
+      category: 'Повседневная практика',
     },
     {
       id: '5',
@@ -61,7 +61,7 @@ export function MainScreen() {
       icon: 'lightning' as IconName,
       description: 'Оценка риска инсульта',
       navigateTo: 'Calculator' as keyof ScreensList,
-      category: 'Кардиология и ангиология'
+      category: 'Кардиология и ангиология',
     },
     {
       id: '6',
@@ -69,7 +69,7 @@ export function MainScreen() {
       icon: 'skf' as IconName,
       description: 'СКФ по формуле CKD-EPI',
       navigateTo: 'Calculator' as keyof ScreensList,
-      category: 'Нефрология'
+      category: 'Нефрология',
     },
   ];
 
@@ -84,7 +84,7 @@ export function MainScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF1D7" />
-      
+
       {/* Верхний бар */}
       <View style={styles.topBar}>
         <View style={styles.searchContainer}>
@@ -99,12 +99,10 @@ export function MainScreen() {
           />
         </View>
       </View>
-      
+
       {/* Основной контент */}
       <View style={styles.content}>
-        <ScrollView 
-          contentContainerStyle={styles.scrollViewContent}
-        >
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
           {Object.entries(groupedCalculators).map(([category, calcs]) => (
             <React.Fragment key={category}>
               <Text style={styles.categoryTitle}>{category}</Text>
@@ -126,14 +124,14 @@ export function MainScreen() {
 
       {/* Нижний бар */}
       <View style={styles.bottomBar}>
-        <Icon 
+        <Icon
           name="history"
           onPress={() => {
             navigation.navigate('History');
           }}
         />
-        <Icon 
-          name="settings" 
+        <Icon
+          name="settings"
           onPress={() => {
             navigation.navigate('Settings');
           }}

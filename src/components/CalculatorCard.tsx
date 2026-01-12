@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,10 @@ import {
   Animated,
   Easing,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
-import type { ScreensList } from '../types/navigation';
-import Icon, { IconName } from './Icons';
+import {useNavigation} from '@react-navigation/native';
+import type {StackNavigationProp} from '@react-navigation/stack';
+import type {ScreensList} from '../types/navigation';
+import Icon, {IconName} from './Icons';
 
 interface CalculatorCardProps {
   id: string;
@@ -18,7 +18,7 @@ interface CalculatorCardProps {
   icon: IconName;
   description?: string;
   // режимы карточки
-  mode?: 'navigate' | 'expand'; 
+  mode?: 'navigate' | 'expand';
   // данные для раскрывающейся карточки в истории
   resultData?: {
     value: number;
@@ -47,10 +47,10 @@ export const CalculatorCard: React.FC<CalculatorCardProps> = ({
 
   // заглушка
   const defaultResultData = {
-    value: 24.5,
+    value: 22,
     unit: 'кг/м²',
-    interpretation: 'Нормальный вес',
-    color: '#4CAF50',
+    interpretation: 'Ваше телосложение в пределах нормы',
+    color: '#2BB641',
   };
 
   const displayData = resultData || defaultResultData;
@@ -79,51 +79,51 @@ export const CalculatorCard: React.FC<CalculatorCardProps> = ({
   // анимация раскрытия карточки
   const contentHeight = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 140], // высота раскрытия
+    outputRange: [0, 150], // высота раскрытия
   });
 
   return (
     <TouchableOpacity
       style={styles.card}
       onPress={handlePress}
-      activeOpacity={0.8}
-    >
+      activeOpacity={0.8}>
       <View style={styles.cardHeader}>
-        <Icon 
-          name={icon} 
-          size={60} 
+        <Icon
+          name={icon}
+          size={60}
           color="#CA6C44"
           style={styles.icon}
           onPress={handlePress}
         />
         <View style={styles.textContainer}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
           {description ? (
-            <Text style={styles.description} numberOfLines={2}>{description}</Text>
+            <Text style={styles.description} numberOfLines={2}>
+              {description}
+            </Text>
           ) : null}
         </View>
       </View>
 
       {mode === 'expand' && (
-        <Animated.View style={[styles.expandedContent, { height: contentHeight }]}>
+        <Animated.View
+          style={[styles.expandedContent, {height: contentHeight}]}>
           <View style={styles.resultSection}>
             <View style={styles.resultValueContainer}>
-              <Text style={styles.resultValue}>{displayData.value}</Text>
-              <Text style={styles.resultUnit}>{displayData.unit}</Text>
+              <Text style={styles.Heading}>Результат:</Text>
+              <View style={styles.result}>
+                <Text style={styles.resultText}>{displayData.value}</Text>
+                <Text style={styles.resultText}>{displayData.unit}</Text>
+              </View>
             </View>
-            <View style={[styles.interpretationBadge, { backgroundColor: displayData.color }]}>
-              <Text style={styles.interpretationText}>{displayData.interpretation}</Text>
+            <View style={styles.interpretationValueContainer}>
+              <Text style={styles.Heading}>Интерпретация:</Text>
+              <Text style={styles.interpretationText}>
+                {displayData.interpretation}
+              </Text>
             </View>
-          </View>
-          
-          <View style={styles.detailsSection}>
-            <Text style={styles.detailsTitle}>Детали расчета:</Text>
-            <Text style={styles.detailsText}>
-              • Рост: 175 см{'\n'}
-              • Вес: 75 кг{'\n'}
-              • Возраст: 30 лет{'\n'}
-              • Дата: {new Date().toLocaleDateString()}
-            </Text>
           </View>
         </Animated.View>
       )}
@@ -169,60 +169,39 @@ const styles = StyleSheet.create({
   },
   expandedContent: {
     overflow: 'hidden',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
   },
   resultSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    flexDirection: 'column',
+    paddingHorizontal: 20,
+    gap: 5,
   },
   resultValueContainer: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    justifyContent: 'space-between',
   },
-  resultValue: {
-    fontFamily: 'sans-serif-medium',
-    fontSize: 28,
-    color: '#333',
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  resultUnit: {
+  Heading: {
     fontFamily: 'sans-serif-light',
-    fontSize: 16,
-    color: '#666',
+    fontSize: 24,
+    color: '#7A7A7A',
   },
-  interpretationBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+  result: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  resultText: {
+    fontFamily: 'sans-serif-light',
+    fontSize: 24,
+    color: '#2BB641',
+  },
+  interpretationValueContainer: {
+    flexDirection: 'column',
+    gap: 10,
   },
   interpretationText: {
-    color: '#FFFFFF',
-    fontFamily: 'sans-serif-medium',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  detailsSection: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
-    padding: 12,
-  },
-  detailsTitle: {
-    fontFamily: 'sans-serif-medium',
-    fontSize: 14,
-    color: '#555',
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  detailsText: {
+    textAlign: 'center',
     fontFamily: 'sans-serif-light',
-    fontSize: 12,
-    color: '#666',
-    lineHeight: 18,
+    fontSize: 24,
+    color: '#2BB641',
   },
 });

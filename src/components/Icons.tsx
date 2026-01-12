@@ -26,7 +26,7 @@ export interface IconProps extends TouchableOpacityProps {
   size?: number;
   color?: string;
   onPress?: () => void;
-  hitSlop?: { top: number; bottom: number; left: number; right: number };
+  hitSlop?: {top: number; bottom: number; left: number; right: number};
 }
 
 // предзагрузка
@@ -50,23 +50,18 @@ const Icon: React.FC<IconProps> = ({
   color = '#FFF1D7',
   style,
   onPress,
-  hitSlop = { top: 10, bottom: 10, left: 10, right: 10 },
+  hitSlop = {top: 10, bottom: 10, left: 10, right: 10},
   ...restProps
 }) => {
-
   return (
     <TouchableOpacity
-      style={[styles.container, { width: size, height: size }, style]}
+      style={[styles.container, {width: size, height: size}, style]}
       onPress={onPress}
       hitSlop={hitSlop}
-      {...restProps}
-    >
+      {...restProps}>
       <Image
         source={ICON_MAP[name]}
-        style={[
-          { width: size, height: size },
-          color ? { tintColor: color } : {},
-        ]}
+        style={[{width: size, height: size}, color ? {tintColor: color} : {}]}
         resizeMode="contain"
       />
     </TouchableOpacity>

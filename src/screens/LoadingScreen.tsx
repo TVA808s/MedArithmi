@@ -1,40 +1,34 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
-import type { ScreensList } from '../types/navigation';
-import {AnimatedCircleSpinner}  from '../components/AnimatedSpinner';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import type {StackNavigationProp} from '@react-navigation/stack';
+import type {ScreensList} from '../types/navigation';
+import {AnimatedCircleSpinner} from '../components/AnimatedSpinner';
 
 // необходима типизация переменной navigation
 type LoadingScreenNavigationProp = StackNavigationProp<ScreensList, 'Loading'>;
 
 export function LoadingScreen() {
-    const navigation = useNavigation<LoadingScreenNavigationProp>();
-    
-    const handleMain = () => {
-        navigation.navigate('Main');
-    };
-    
-    return (
+  const navigation = useNavigation<LoadingScreenNavigationProp>();
+
+  const handleMain = () => {
+    navigation.navigate('Main');
+  };
+
+  return (
     <View style={styles.container}>
-        <View style={{ marginBottom: 50 }}>
-            <Text style={styles.text}>загрузка</Text>
-        </View>
+      <View style={{marginBottom: 50}}>
+        <Text style={styles.text}>загрузка</Text>
+      </View>
 
-        <AnimatedCircleSpinner/>
+      <AnimatedCircleSpinner />
 
-        <TouchableOpacity 
-            style={styles.button} 
-            onPress={handleMain}
-            activeOpacity={0.7}
-        >
-            <Text style={styles.buttonText}>Перейти на главную</Text>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleMain}
+        activeOpacity={0.7}>
+        <Text style={styles.buttonText}>Перейти на главную</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -54,7 +48,7 @@ const styles = StyleSheet.create({
     fontWeight: '200',
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 2, height: 2 },
+    textShadowOffset: {width: 2, height: 2},
     textShadowRadius: 4,
   },
   button: {
