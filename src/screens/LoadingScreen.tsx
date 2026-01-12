@@ -17,7 +17,7 @@ export function LoadingScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={{marginBottom: 50}}>
+      <View style={styles.LoadContainer}>
         <Text style={styles.text}>загрузка</Text>
       </View>
 
@@ -40,6 +40,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingBottom: 100,
+  },
+  LoadContainer: {
+    marginBottom: 50,
   },
   text: {
     fontFamily: 'sans-serif-light',

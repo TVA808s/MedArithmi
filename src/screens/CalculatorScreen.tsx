@@ -154,7 +154,7 @@ export function CalculatorScreen() {
       <View style={styles.content}>
         <View style={styles.HeadingContainer}>
           <Text style={styles.Heading}>(ИМТ) Индекс массы тела</Text>
-          <View style={styles.HeadingLine}></View>
+          <View style={styles.HeadingLine} />
         </View>
 
         <View style={styles.InputContainer}>
@@ -178,7 +178,7 @@ export function CalculatorScreen() {
             <Text style={styles.errorText}>{weightError}</Text>
           ) : null}
 
-          <View style={styles.InputLine}></View>
+          <View style={styles.InputLine} />
 
           {/* Поле ввода роста */}
           <View style={styles.InputRow}>

@@ -33,7 +33,7 @@ interface CalculatorCardProps {
 type CardNavigationProp = StackNavigationProp<ScreensList>;
 
 export const CalculatorCard: React.FC<CalculatorCardProps> = ({
-  id,
+  id: _id,
   title,
   icon,
   description = '',
@@ -56,7 +56,9 @@ export const CalculatorCard: React.FC<CalculatorCardProps> = ({
   const displayData = resultData || defaultResultData;
 
   const toggleExpand = () => {
-    if (mode !== 'expand') return;
+    if (mode !== 'expand') {
+      return;
+    }
 
     const toValue = expanded ? 0 : 1;
     Animated.timing(animation, {

@@ -16,7 +16,7 @@ export const AnimatedCircleSpinner = ({color = '#7a7a7a'}) => {
     );
     anim.start();
     return () => anim.stop();
-  }, []);
+  }, [spinValue]);
 
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
