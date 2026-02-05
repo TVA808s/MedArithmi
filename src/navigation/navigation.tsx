@@ -1,13 +1,18 @@
 import * as React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
-import {LoadingScreen} from '../screens/LoadingScreen';
 import {MainScreen} from '../screens/MainScreen';
 import {CalculatorScreen} from '../screens/CalculatorScreen';
 import {SettingsScreen} from '../screens/SettingsScreen';
 import {HistoryScreen} from '../screens/HistoryScreen';
+import {TopBar} from '../components/TopBar';
 
 const Stack = createStackNavigator();
+
+// Выносим компонент TopBarWrapper отдельно
+const TopBarWrapper = () => {
+  return <TopBar />;
+};
 
 const Navigation = () => {
   return (
@@ -15,9 +20,8 @@ const Navigation = () => {
       <Stack.Navigator
         initialRouteName="Loading"
         screenOptions={{
-          headerShown: false,
+          header: TopBarWrapper,
         }}>
-        <Stack.Screen name="Loading" component={LoadingScreen} />
         <Stack.Screen name="Main" component={MainScreen} />
         <Stack.Screen name="Calculator" component={CalculatorScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />

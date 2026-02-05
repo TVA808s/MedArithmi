@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -13,62 +13,23 @@ import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
 import type {RouteProp} from '@react-navigation/native';
 import {KeyboardAvoidingView, Platform} from 'react-native';
-import {TopBar} from '../components/TopBar';
 import {BottomBar} from '../components/BottomBar';
+import {usePulse} from '../context/PulseContext';
+import CalculatorService from '../services/CalculatorService';
 
-type CalculatorScreenNavigationProp = StackNavigationProp<ScreensList, 'Calculator'>;
+type CalculatorScreenNavigationProp = StackNavigationProp<
+  ScreensList,
+  'Calculator'
+>;
 type CalculatorScreenRouteProp = RouteProp<ScreensList, 'Calculator'>;
-
-// Интерпретация ощущений для каждой зоны
-const zoneInterpretations: Record<string, string> = {
-  'Восстановление': 'Очень легко. Возможен свободный разговор и пение.',
-  'Аэробная': 'Комфортно. Можно вести разговор полными предложениями.',
-  'Темповая': 'Умеренно тяжело. Дыхание учащается, речь короткими фразами.',
-  'Анаэробная': 'Тяжело. Частое дыхание, произносить можно лишь отдельные слова.',
-  'Максимальная': 'Очень тяжело. Максимальное усилие, речь невозможна.',
-};
-
-// Границы зон в % от пульсового резерва
-const zonePercentages: Record<string, {min: number; max: number}> = {
-  'Восстановление': {min: 50, max: 60},
-  'Аэробная': {min: 60, max: 70},
-  'Темповая': {min: 70, max: 80},
-  'Анаэробная': {min: 80, max: 90},
-  'Максимальная': {min: 90, max: 100},
-};
-
-// Функция расчета МЧСС по формуле Карвонена
-const calculateMaxHR = (age: number): number => {
-  return 220 - age;
-};
-
-// Функция расчета пульсового резерва
-const calculateHeartRateReserve = (maxHR: number, restingHR: number): number => {
-  return maxHR - restingHR;
-};
-
-// Функция расчета границ зоны
-const calculateZoneLimits = (
-  restingHR: number,
-  heartRateReserve: number,
-  zoneName: string
-): {min: number; max: number} => {
-  const percentages = zonePercentages[zoneName];
-  if (!percentages) return {min: 0, max: 0};
-  
-  const min = Math.round(restingHR + (heartRateReserve * percentages.min / 100));
-  const max = Math.round(restingHR + (heartRateReserve * percentages.max / 100));
-  
-  return {min, max};
-};
 
 export function CalculatorScreen() {
   const navigation = useNavigation<CalculatorScreenNavigationProp>();
   const route = useRoute<CalculatorScreenRouteProp>();
-  
-  // Получаем название зоны из параметров навигации
+  const {updatePulseData} = usePulse();
+
   const zoneName = route.params?.zoneName || 'Аэробная';
-  
+
   const bottomBarItems = [
     {
       iconName: 'back' as const,
@@ -82,96 +43,94 @@ export function CalculatorScreen() {
     },
   ];
 
-  // состояния для ввода
+  // Состояния
   const [age, setAge] = useState('');
   const [restingHR, setRestingHR] = useState('');
-  
-  // состояния для результата
-  const [maxHR, setMaxHR] = useState<number | null>(null);
-  const [heartRateReserve, setHeartRateReserve] = useState<number | null>(null);
-  const [zoneLimits, setZoneLimits] = useState<{min: number; max: number} | null>(null);
-  
-  // состояния для валидации
-  const [ageError, setAgeError] = useState<string>('');
-  const [restingHRError, setRestingHRError] = useState<string>('');
-  const [ageBorderColor, setAgeBorderColor] = useState<string>('#C0C0C0');
-  const [restingHRBorderColor, setRestingHRBorderColor] = useState<string>('#C0C0C0');
+  const [ageError, setAgeError] = useState('');
+  const [restingHRError, setRestingHRError] = useState('');
+  const [ageBorderColor, setAgeBorderColor] = useState('#C0C0C0');
+  const [restingHRBorderColor, setRestingHRBorderColor] = useState('#C0C0C0');
+  const [calculationResult, setCalculationResult] = useState<{
+    maxHR: number;
+    heartRateReserve: number;
+    zoneLimits: {min: number; max: number};
+  } | null>(null);
 
-  // обработка возраста
-  const validateAge = (value: string) => {
-    if (value === '') {
-      setAgeError('');
-      setAgeBorderColor('#C0C0C0');
-      return false;
-    }
+  // Для предотвращения бесконечного цикла
+  const lastZoneLimitsRef = useRef<string>('');
+  const lastRestingHRRef = useRef<string>('');
 
-    const numValue = parseInt(value, 10);
-    if (isNaN(numValue) || numValue < 12 || numValue > 90) {
-      setAgeError('Должно быть от 12 до 90 лет');
-      setAgeBorderColor('#FF6060');
-      return false;
-    }
-
-    setAgeError('');
-    setAgeBorderColor('#2BB641');
-    return true;
-  };
-
-  // обработка пульса в покое
-  const validateRestingHR = (value: string) => {
-    if (value === '') {
-      setRestingHRError('');
-      setRestingHRBorderColor('#C0C0C0');
-      return false;
-    }
-
-    const numValue = parseInt(value, 10);
-    if (isNaN(numValue) || numValue < 40 || numValue > 100) {
-      setRestingHRError('Должно быть от 40 до 100 уд/мин');
-      setRestingHRBorderColor('#FF6060');
-      return false;
-    }
-
-    setRestingHRError('');
-    setRestingHRBorderColor('#2BB641');
-    return true;
-  };
-
-  // оставляем в полях только числа
+  // Обработчики ввода
   const handleAgeChange = (text: string) => {
-    const cleaned = text.replace(/[^0-9]/g, '');
+    const cleaned = CalculatorService.cleanNumberInput(text);
     setAge(cleaned);
-    validateAge(cleaned);
+
+    const validation = CalculatorService.validateAge(cleaned);
+    setAgeError(validation.error);
+    setAgeBorderColor(validation.isValid ? '#2BB641' : '#FF6060');
   };
 
   const handleRestingHRChange = (text: string) => {
-    const cleaned = text.replace(/[^0-9]/g, '');
+    const cleaned = CalculatorService.cleanNumberInput(text);
     setRestingHR(cleaned);
-    validateRestingHR(cleaned);
+
+    const validation = CalculatorService.validateRestingHR(cleaned);
+    setRestingHRError(validation.error);
+    setRestingHRBorderColor(validation.isValid ? '#2BB641' : '#FF6060');
   };
 
-  // динамичный расчет
+  // Динамичный расчет
   useEffect(() => {
     if (age && restingHR && !ageError && !restingHRError) {
-      const ageNum = parseInt(age, 10);
-      const restingHRNum = parseInt(restingHR, 10);
-      
-      // Расчеты
-      const calculatedMaxHR = calculateMaxHR(ageNum);
-      const calculatedHRReserve = calculateHeartRateReserve(calculatedMaxHR, restingHRNum);
-      const calculatedZoneLimits = calculateZoneLimits(restingHRNum, calculatedHRReserve, zoneName);
-      
-      setMaxHR(calculatedMaxHR);
-      setHeartRateReserve(calculatedHRReserve);
-      setZoneLimits(calculatedZoneLimits);
+      const result = CalculatorService.calculateAll({age, restingHR, zoneName});
+      setCalculationResult(result);
     } else {
-      setMaxHR(null);
-      setHeartRateReserve(null);
-      setZoneLimits(null);
+      setCalculationResult(null);
     }
   }, [age, restingHR, ageError, restingHRError, zoneName]);
 
-  // функция очистки всех полей
+  // Обновление верхней панели
+  useEffect(() => {
+    if (calculationResult?.zoneLimits && restingHR) {
+      const zoneLimitsKey = `${calculationResult.zoneLimits.min}-${calculationResult.zoneLimits.max}`;
+
+      if (
+        zoneLimitsKey !== lastZoneLimitsRef.current ||
+        restingHR !== lastRestingHRRef.current
+      ) {
+        updatePulseData({
+          zoneRange: zoneLimitsKey,
+          restingHR: restingHR,
+        });
+
+        lastZoneLimitsRef.current = zoneLimitsKey;
+        lastRestingHRRef.current = restingHR;
+      }
+    }
+  }, [calculationResult, restingHR, updatePulseData]);
+
+  // Сохранение в БД
+  useEffect(() => {
+    const saveToDB = async () => {
+      if (calculationResult && age && restingHR) {
+        try {
+          await CalculatorService.saveCalculation({
+            zoneName,
+            age: parseInt(age, 10),
+            restingHR: parseInt(restingHR, 10),
+            zoneMin: calculationResult.zoneLimits.min,
+            zoneMax: calculationResult.zoneLimits.max,
+          });
+        } catch (error) {
+          console.error('Ошибка сохранения:', error);
+        }
+      }
+    };
+
+    saveToDB();
+  }, [calculationResult, age, restingHR, zoneName]);
+
+  // Функция очистки
   const clearAll = () => {
     setAge('');
     setRestingHR('');
@@ -179,106 +138,116 @@ export function CalculatorScreen() {
     setRestingHRError('');
     setAgeBorderColor('#C0C0C0');
     setRestingHRBorderColor('#C0C0C0');
-    setMaxHR(null);
-    setHeartRateReserve(null);
-    setZoneLimits(null);
+    setCalculationResult(null);
+
+    lastZoneLimitsRef.current = '';
+    lastRestingHRRef.current = '';
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F0F5EE" />
-      <TopBar />
-      
-      
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.HeadingContainer}>
-          <Text style={styles.Heading}>{zoneName}</Text>
-          <Text style={styles.HeadingHint}>{`Как измерить "ЧСС покоя"?
-Измерьте утром после пробуждения или после 15-ти минутного отдыха в положении сидя или лежа свой пульс в течении одной минуты.`}</Text>
-        </View>
 
-        <View style={styles.InputContainer}>
-          {/* Поле ввода возраста */}
-          <View style={styles.InputRow}>
-            <Text style={styles.InputText}>Возраст:</Text>
-            <TextInput
-              style={[styles.input, {borderColor: ageBorderColor}]}
-              value={age}
-              onChangeText={handleAgeChange}
-              placeholder="от 12 до 90"
-              placeholderTextColor="#C0C0C0"
-              keyboardType="numeric"
-              maxLength={2}
-            />
-            <Text style={styles.InputTextUnits}>лет</Text>
-          </View>
-
-          {/* Сообщение об ошибке для возраста */}
-          {ageError ? (
-            <Text style={styles.errorText}>{ageError}</Text>
-          ) : null}
-
-          <View style={styles.InputLine} />
-
-          {/* Поле ввода пульса в покое */}
-          <View style={styles.InputRow}>
-            <Text style={styles.InputText}>ЧСС покоя:</Text>
-            <TextInput
-              style={[styles.input, {borderColor: restingHRBorderColor}]}
-              value={restingHR}
-              onChangeText={handleRestingHRChange}
-              placeholder="от 40 до 100"
-              placeholderTextColor="#C0C0C0"
-              keyboardType="numeric"
-              maxLength={3}
-            />
-            <Text style={styles.InputTextUnits}>уд/мин</Text>
-          </View>
-
-          {/* Сообщение об ошибке для пульса */}
-          {restingHRError ? (
-            <Text style={styles.errorText}>{restingHRError}</Text>
-          ) : null}
-        </View>
-
-        {/* Блок с результатом */}
-        {zoneLimits !== null && maxHR !== null && heartRateReserve !== null && (
-          <View style={styles.resultContainer}>
-            <View style={styles.resultHeader}>
-              <Text style={styles.resultTitle}>Ваша пульсовая зона</Text>
-            </View>
-
-            <View style={styles.resultContent}>
-              {/* Границы зоны */}
-              <View style={styles.zoneContainer}>
-                <View style={styles.zoneValueContainer}>
-                  <Text style={styles.zoneValue}>{zoneLimits.min} - {zoneLimits.max}</Text>
-                  <Text style={styles.zoneUnit}>   уд/мин</Text>
-                </View>
-              </View>
-
-              {/* Интерпретация ощущений */}
-              <View style={styles.interpretationContainer}>
-                <Text style={styles.interpretationTitle}>Ощущения в этой зоне:</Text>
-                <View style={styles.interpretationTextContainer}>
-                  <Text style={styles.interpretationText}>
-                    {zoneInterpretations[zoneName] || 'Информация отсутствует'}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Подсказка если нет результата */}
-        {!zoneLimits && !ageError && !restingHRError && age === '' && restingHR === '' && (
-          <View style={styles.initialHintContainer}>
-            <Text style={styles.initialHintText}>
-              Введите ваш возраст и ЧСС покоя для расчета пульсовой зоны
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.HeadingContainer}>
+            <Text style={styles.Heading}>{zoneName}</Text>
+            <Text style={styles.HeadingHint}>
+              {
+                'Как измерить "ЧСС покоя"?\nИзмерьте утром после пробуждения или после 15-ти минутного отдыха в положении сидя или лежа свой пульс в течении одной минуты.'
+              }
             </Text>
           </View>
-        )}
-      </ScrollView>
+
+          <View style={styles.InputContainer}>
+            {/* Поле ввода возраста */}
+            <View style={styles.InputRow}>
+              <Text style={styles.InputText}>Возраст:</Text>
+              <TextInput
+                style={[styles.input, {borderColor: ageBorderColor}]}
+                value={age}
+                onChangeText={handleAgeChange}
+                placeholder="от 12 до 90"
+                placeholderTextColor="#C0C0C0"
+                keyboardType="numeric"
+                maxLength={2}
+              />
+              <Text style={styles.InputTextUnits}>лет</Text>
+            </View>
+            {ageError ? <Text style={styles.errorText}>{ageError}</Text> : null}
+
+            <View style={styles.InputLine} />
+
+            {/* Поле ввода пульса в покое */}
+            <View style={styles.InputRow}>
+              <Text style={styles.InputText}>ЧСС покоя:</Text>
+              <TextInput
+                style={[styles.input, {borderColor: restingHRBorderColor}]}
+                value={restingHR}
+                onChangeText={handleRestingHRChange}
+                placeholder="от 40 до 100"
+                placeholderTextColor="#C0C0C0"
+                keyboardType="numeric"
+                maxLength={3}
+              />
+              <Text style={styles.InputTextUnits}>уд/мин</Text>
+            </View>
+            {restingHRError ? (
+              <Text style={styles.errorText}>{restingHRError}</Text>
+            ) : null}
+          </View>
+
+          {/* Блок с результатом */}
+          {calculationResult && (
+            <View style={styles.resultContainer}>
+              <View style={styles.resultHeader}>
+                <Text style={styles.resultTitle}>Ваша пульсовая зона</Text>
+              </View>
+
+              <View style={styles.resultContent}>
+                {/* Границы зоны */}
+                <View style={styles.zoneContainer}>
+                  <View style={styles.zoneValueContainer}>
+                    <Text style={styles.zoneValue}>
+                      {calculationResult.zoneLimits.min} -{' '}
+                      {calculationResult.zoneLimits.max}
+                    </Text>
+                    <Text style={styles.zoneUnit}>уд/мин</Text>
+                  </View>
+                </View>
+
+                {/* Интерпретация ощущений */}
+                <View style={styles.interpretationContainer}>
+                  <Text style={styles.interpretationTitle}>
+                    Ощущения в этой зоне:
+                  </Text>
+                  <View style={styles.interpretationTextContainer}>
+                    <Text style={styles.interpretationText}>
+                      {CalculatorService.getZoneInterpretation(zoneName)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Подсказка если нет результата */}
+          {!calculationResult &&
+            !ageError &&
+            !restingHRError &&
+            age === '' &&
+            restingHR === '' && (
+              <View style={styles.initialHintContainer}>
+                <Text style={styles.initialHintText}>
+                  Введите ваш возраст и ЧСС покоя для расчета пульсовой зоны
+                </Text>
+              </View>
+            )}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <BottomBar items={bottomBarItems} />
     </SafeAreaView>
@@ -289,6 +258,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F0F5EE',
+  },
+  keyboardAvoid: {
+    flex: 1,
   },
   content: {
     flex: 1,
@@ -356,7 +328,7 @@ const styles = StyleSheet.create({
   resultContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    marginVertical: 30,
+    marginVertical: 20,
     padding: 15,
     width: '100%',
   },

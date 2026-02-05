@@ -10,7 +10,6 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
-import {TopBar} from '../components/TopBar';
 import {BottomBar} from '../components/BottomBar';
 
 // необходима типизация переменной navigation
@@ -42,7 +41,6 @@ export function SettingsScreen() {
     <SafeAreaView style={styles.safeArea}>
       {/* Верхний бар */}
       <StatusBar barStyle="dark-content" backgroundColor="#F0F5EE" />
-      <TopBar />
 
       {/* Основной контент */}
       <View style={styles.content}>

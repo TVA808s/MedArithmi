@@ -22,7 +22,7 @@ interface CalculatorCardProps {
 type CardNavigationProp = StackNavigationProp<ScreensList>;
 
 export const CalculatorCard: React.FC<CalculatorCardProps> = ({
-  id,
+  id: _id,
   title,
   description,
   params,

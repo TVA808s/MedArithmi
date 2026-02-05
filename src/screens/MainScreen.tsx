@@ -10,7 +10,6 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
-import {TopBar} from '../components/TopBar';
 import {BottomBar} from '../components/BottomBar';
 import {CalculatorCard} from '../components/CalculatorCard';
 
@@ -22,35 +21,40 @@ const calculators = [
   {
     id: '1',
     title: 'Восстановление',
-    description: 'Активное восстановление организма, улучшение кровотока. Идеально для разминки, заминки и лёгких восстановительных дней.',
+    description:
+      'Активное восстановление организма, улучшение кровотока. Идеально для разминки, заминки и лёгких восстановительных дней.',
     navigateTo: 'Calculator' as const,
     params: {zoneName: 'Восстановление'},
   },
   {
     id: '2',
     title: 'Аэробная',
-    description: 'Развитие базовой выносливости и укрепление сердечно-сосудистой системы. Основная зона для эффективного жиросжигания.',
+    description:
+      'Развитие базовой выносливости и укрепление сердечно-сосудистой системы. Основная зона для эффективного жиросжигания.',
     navigateTo: 'Calculator' as const,
     params: {zoneName: 'Аэробная'},
   },
   {
     id: '3',
     title: 'Темповая',
-    description: 'Повышение анаэробного порога и функциональной выносливости. Позволяет дольше поддерживать высокий темп тренировки.',
+    description:
+      'Повышение анаэробного порога и функциональной выносливости. Позволяет дольше поддерживать высокий темп тренировки.',
     navigateTo: 'Calculator' as const,
     params: {zoneName: 'Темповая'},
   },
   {
     id: '4',
     title: 'Анаэробная',
-    description: 'Развитие скорости, мощности и мышечной выносливости. Тренировка способности работать в условиях кислородного долга.',
+    description:
+      'Развитие скорости, мощности и мышечной выносливости. Тренировка способности работать в условиях кислородного долга.',
     navigateTo: 'Calculator' as const,
     params: {zoneName: 'Анаэробная'},
   },
   {
     id: '5',
     title: 'Максимальная',
-    description: 'Развитие максимальной скорости и взрывной силы. Для коротких интервалов с предельной мобилизации организма.',
+    description:
+      'Развитие максимальной скорости и взрывной силы. Для коротких интервалов с предельной мобилизации организма.',
     navigateTo: 'Calculator' as const,
     params: {zoneName: 'Максимальная'},
   },
@@ -58,8 +62,8 @@ const calculators = [
 
 export function MainScreen() {
   const navigation = useNavigation<MainScreenNavigationProp>();
-  const [searchQuery, setSearchQuery] = useState('');
-   const bottomBarItems = [
+  const [_searchQuery, _setSearchQuery] = useState('');
+  const bottomBarItems = [
     {
       iconName: 'history' as const,
       onPress: () => navigation.navigate('History'),
@@ -76,12 +80,13 @@ export function MainScreen() {
     <SafeAreaView style={styles.safeArea}>
       {/* Верхний бар */}
       <StatusBar barStyle="dark-content" backgroundColor="#F0F5EE" />
-      <TopBar />
 
       {/* Основной контент */}
       <View style={styles.content}>
         <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          <Text style={styles.title}>Выберите предпочитаемый уровень нагрузки</Text>
+          <Text style={styles.title}>
+            Выберите предпочитаемый уровень нагрузки
+          </Text>
           {/* Отображаем все калькуляторы без категорий */}
           {calculators.map(calc => (
             <CalculatorCard
