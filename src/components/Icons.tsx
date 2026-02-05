@@ -47,7 +47,7 @@ const ICON_MAP: Record<IconName, any> = {
 const Icon: React.FC<IconProps> = ({
   name,
   size = 60,
-  color = '#FFF1D7',
+  color = '#F0F5EE',
   style,
   onPress,
   hitSlop = {top: 10, bottom: 10, left: 10, right: 10},

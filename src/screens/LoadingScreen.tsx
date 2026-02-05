@@ -36,7 +36,7 @@ export function LoadingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF1D7',
+    backgroundColor: '#F0F5EE',
     justifyContent: 'center',
     alignItems: 'center',
     paddingBottom: 100,

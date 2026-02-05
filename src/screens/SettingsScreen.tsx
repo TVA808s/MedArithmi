@@ -10,7 +10,8 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
-import Icon from '../components/Icons';
+import {TopBar} from '../components/TopBar';
+import {BottomBar} from '../components/BottomBar';
 
 // необходима типизация переменной navigation
 type SettingsScreenNavigationProp = StackNavigationProp<
@@ -20,6 +21,18 @@ type SettingsScreenNavigationProp = StackNavigationProp<
 
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const bottomBarItems = [
+    {
+      iconName: 'back' as const,
+      onPress: () => navigation.navigate('Main'),
+      key: 'back-btn',
+    },
+    {
+      iconName: 'history' as const,
+      onPress: () => navigation.navigate('History'),
+      key: 'history-btn',
+    },
+  ];
   const [selectedFontSize, setSelectedFontSize] = useState<
     'small' | 'medium' | 'large'
   >('medium');
@@ -27,15 +40,13 @@ export function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFF1D7" />
-
       {/* Верхний бар */}
-      <View style={styles.topBar}>
-        <Text style={styles.text}>настройки</Text>
-      </View>
+      <StatusBar barStyle="dark-content" backgroundColor="#F0F5EE" />
+      <TopBar />
 
       {/* Основной контент */}
       <View style={styles.content}>
+        <Text style={styles.title}>Настройки</Text>
         <Text style={styles.sectionTitle}>Размер текста</Text>
 
         <View style={styles.radioGroup}>
@@ -73,7 +84,7 @@ export function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.analyticsSection}>
+        <View style={styles.section}>
           <TouchableOpacity
             style={styles.checkboxContainer}
             onPress={() => setAllowAnalytics(!allowAnalytics)}>
@@ -86,7 +97,7 @@ export function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.privacySection}>
+        <View style={styles.section}>
           <Text style={styles.privacyTitle}>Мы ценим вашу приватность.</Text>
           <Text style={styles.privacyText}>
             • Медицинские расчеты: Все вводимые вами данные (вес, рост,
@@ -101,20 +112,7 @@ export function SettingsScreen() {
       </View>
 
       {/* Нижний бар */}
-      <View style={styles.bottomBar}>
-        <Icon
-          name="back"
-          onPress={() => {
-            navigation.navigate('Main');
-          }}
-        />
-        <Icon
-          name="history"
-          onPress={() => {
-            navigation.navigate('History');
-          }}
-        />
-      </View>
+      <BottomBar items={bottomBarItems} />
     </SafeAreaView>
   );
 }
@@ -122,45 +120,23 @@ export function SettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFF1D7',
-  },
-  topBar: {
-    backgroundColor: '#B2F28E',
-    justifyContent: 'center',
-    height: 120,
-    paddingHorizontal: 40,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 10,
-  },
-  text: {
-    fontFamily: 'sans-serif-light',
-    fontSize: 42,
-    color: '#7A7A7A',
-    fontWeight: '200',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: {width: 2, height: 2},
-    textShadowRadius: 4,
+    backgroundColor: '#F0F5EE',
   },
   content: {
     flex: 1,
-    paddingVertical: 20,
+    paddingTop: 40,
     paddingHorizontal: '10%',
   },
-  sectionTitle: {
-    fontFamily: 'sans-serif-light',
+  title: {
+    color: '#E75F55',
     fontSize: 24,
-    color: '#7A7A7A',
-    marginBottom: 15,
+    textAlign: 'center',
+    marginBottom: 40,
   },
-  radioGroup: {
-    marginBottom: 30,
+  sectionTitle: {
+    fontSize: 21,
+    color: '#A0C28E',
+    marginBottom: 15,
   },
   radioOption: {
     flexDirection: 'row',
@@ -168,8 +144,8 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   radioOuter: {
-    width: 24,
-    height: 24,
+    width: 21,
+    height: 21,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#79A162',
@@ -184,15 +160,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#79A162',
   },
   radioLabel: {
-    fontFamily: 'sans-serif-light',
-    fontSize: 18,
-    color: '#7A7A7A',
+    fontSize: 21,
+    color: '#A0C28E',
   },
-  analyticsSection: {
-    marginBottom: 30,
-    paddingTop: 10,
+  section: {
+    marginBottom: 10,
+    paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#E0D6C2',
+    borderTopColor: '#fdbcbd',
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -214,42 +189,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   checkboxLabel: {
-    fontFamily: 'sans-serif-light',
-    fontSize: 18,
-    color: '#7A7A7A',
+    fontSize: 21,
+    color: '#A0C28E',
     flex: 1,
   },
-  privacySection: {
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#E0D6C2',
-  },
   privacyTitle: {
-    fontFamily: 'sans-serif-light',
-    fontSize: 18,
-    color: '#7A7A7A',
+    fontSize: 21,
+    color: '#A0C28E',
     textAlign: 'center',
     marginBottom: 15,
-    fontWeight: '300',
   },
   privacyText: {
     textAlign: 'left',
-    fontFamily: 'sans-serif-light',
-    fontSize: 14,
-    color: '#7A7A7A',
+    fontSize: 16,
+    color: '#A0C28E',
     lineHeight: 20,
     marginBottom: 10,
-  },
-  bottomBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#79A162',
-    height: 70,
-    marginTop: -5,
-    borderTopColor: 'rgba(0, 0, 0, 0.12)',
-    borderTopWidth: 5,
-    borderTopLeftRadius: 10,
   },
 });
