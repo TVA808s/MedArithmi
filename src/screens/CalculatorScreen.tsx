@@ -29,7 +29,7 @@ export function CalculatorScreen() {
   const route = useRoute<CalculatorScreenRouteProp>();
   const {updatePulseData} = usePulse();
 
-  const zoneName = route.params?.zoneName || 'Аэробная';
+  const zoneName = (route.params as any)?.zoneName || 'Аэробная';
 
   const bottomBarItems = [
     {
@@ -122,7 +122,7 @@ export function CalculatorScreen() {
             zoneMin: calculationResult.zoneLimits.min,
             zoneMax: calculationResult.zoneLimits.max,
           });
-          
+
           // Логируем успешный расчет
           await FirebaseService.logEvent('calculation_completed', {
             zone: zoneName,
@@ -131,14 +131,14 @@ export function CalculatorScreen() {
             zone_min: calculationResult.zoneLimits.min,
             zone_max: calculationResult.zoneLimits.max,
           });
-          
         } catch (error) {
           console.error('Ошибка сохранения:', error);
-          
+
           // Логируем ошибку расчета
           await FirebaseService.logEvent('calculation_error', {
             zone: zoneName,
-            error_message: error instanceof Error ? error.message : 'Unknown error'
+            error_message:
+              error instanceof Error ? error.message : 'Unknown error',
           });
         }
       }
@@ -224,7 +224,7 @@ export function CalculatorScreen() {
                 <Text style={styles.resultTitle}>Ваша пульсовая зона</Text>
               </View>
 
-              <View style={styles.resultContent}>
+              <View>
                 {/* Границы зоны */}
                 <View style={styles.zoneContainer}>
                   <View style={styles.zoneValueContainer}>
@@ -237,7 +237,7 @@ export function CalculatorScreen() {
                 </View>
 
                 {/* Интерпретация ощущений */}
-                <View style={styles.interpretationContainer}>
+                <View>
                   <Text style={styles.interpretationTitle}>
                     Ощущения в этой зоне:
                   </Text>

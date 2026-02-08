@@ -20,10 +20,10 @@ class DatabaseService {
         location: 'default',
       });
       console.log('Database opened');
-      
+
       await this.createTables();
       console.log('Tables created');
-      
+
       await this.initializeDefaultSettings();
       console.log('Default settings initialized');
     } catch (error) {
@@ -59,12 +59,16 @@ class DatabaseService {
 
   private async initializeDefaultSettings(): Promise<void> {
     try {
-      const existingAnalytics = await this.getSetting(SETTINGS_KEYS.ALLOW_ANALYTICS);
+      const existingAnalytics = await this.getSetting(
+        SETTINGS_KEYS.ALLOW_ANALYTICS,
+      );
       if (existingAnalytics === null) {
         await this.saveSetting(SETTINGS_KEYS.ALLOW_ANALYTICS, 'true');
       }
 
-      const existingMessages = await this.getSetting(SETTINGS_KEYS.ALLOW_MESSAGES);
+      const existingMessages = await this.getSetting(
+        SETTINGS_KEYS.ALLOW_MESSAGES,
+      );
       if (existingMessages === null) {
         await this.saveSetting(SETTINGS_KEYS.ALLOW_MESSAGES, 'true');
       }

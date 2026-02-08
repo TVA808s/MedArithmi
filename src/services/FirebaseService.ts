@@ -6,7 +6,7 @@ class FirebaseService {
   async initialize(enabled: boolean = true): Promise<void> {
     try {
       this.analyticsEnabled = enabled;
-      
+
       if (!enabled) {
         console.log('Firebase Analytics отключен пользователем');
         return;
@@ -15,7 +15,6 @@ class FirebaseService {
       // Включаем сбор аналитики
       await analytics().setAnalyticsCollectionEnabled(true);
       console.log('Firebase Analytics инициализирован');
-      
     } catch (error) {
       console.error('Ошибка инициализации Firebase:', error);
       this.analyticsEnabled = false;
@@ -24,7 +23,7 @@ class FirebaseService {
 
   async setAnalyticsEnabled(enabled: boolean): Promise<void> {
     this.analyticsEnabled = enabled;
-    
+
     try {
       await analytics().setAnalyticsCollectionEnabled(enabled);
       console.log(`Firebase Analytics ${enabled ? 'включен' : 'отключен'}`);
@@ -34,8 +33,10 @@ class FirebaseService {
   }
 
   async logEvent(eventName: string, params?: any): Promise<void> {
-    if (!this.analyticsEnabled) return;
-    
+    if (!this.analyticsEnabled) {
+      return;
+    }
+
     try {
       await analytics().logEvent(eventName, params);
       console.log(`Событие отправлено: ${eventName}`, params);
@@ -45,8 +46,10 @@ class FirebaseService {
   }
 
   async logScreenView(screenName: string): Promise<void> {
-    if (!this.analyticsEnabled) return;
-    
+    if (!this.analyticsEnabled) {
+      return;
+    }
+
     try {
       await analytics().logScreenView({
         screen_name: screenName,

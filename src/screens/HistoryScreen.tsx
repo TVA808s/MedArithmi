@@ -38,7 +38,6 @@ export function HistoryScreen() {
   const [history, setHistory] = useState<GroupedHistory>({});
   const [loading, setLoading] = useState(true);
   const [isEmpty, setIsEmpty] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
 
   const bottomBarItems = [
     {
@@ -50,6 +49,7 @@ export function HistoryScreen() {
       iconName: 'back' as const,
       onPress: () => navigation.navigate('Main'),
       key: 'back-btn',
+      iconStyle: {transform: [{rotate: '180deg'}]},
     },
   ];
 
@@ -106,30 +106,34 @@ export function HistoryScreen() {
     const loadHistory = async () => {
       try {
         setLoading(true);
-        const data: HistoryItem[] = await DatabaseService.getCalculationHistory(10);
-        
-        // Логируем загрузку истории
+
+        // 1. Загружаем данные
+        const data: HistoryItem[] = await DatabaseService.getCalculationHistory(
+          10,
+        );
+
+        // 2. Логируем просмотр истории
         await FirebaseService.logEvent('history_viewed', {
-          item_count: data.length
+          item_count: data.length,
         });
-        
+
         if (data.length === 0) {
           setIsEmpty(true);
           setHistory({});
         } else {
           setIsEmpty(false);
-          setTotalCount(data.length);
           const grouped = groupByDate(data);
           setHistory(grouped);
         }
       } catch (error) {
         console.error('Ошибка загрузки истории:', error);
-        
+
         // Логируем ошибку загрузки истории
         await FirebaseService.logEvent('history_load_error', {
-          error_message: error instanceof Error ? error.message : 'Unknown error'
+          error_message:
+            error instanceof Error ? error.message : 'Unknown error',
         });
-        
+
         setIsEmpty(true);
       } finally {
         setLoading(false);
@@ -178,7 +182,6 @@ export function HistoryScreen() {
               <Text style={styles.infoText}>
                 Показаны последние 10 расчетов
               </Text>
-              <Text style={styles.countText}>Всего: {totalCount} записей</Text>
             </View>
           )}
 

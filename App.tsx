@@ -1,10 +1,18 @@
 import React, {useEffect, useState} from 'react';
-import {SafeAreaView, StyleSheet, View, ActivityIndicator, Text} from 'react-native';
+import {
+  SafeAreaView,
+  StyleSheet,
+  View,
+  ActivityIndicator,
+  Text,
+} from 'react-native';
 import Navigation from './src/navigation/navigation';
 import {PulseProvider} from './src/context/PulseContext';
+import {SettingsProvider} from './src/context/SettingsContext';
 import DatabaseService from './src/services/DatabaseService';
 import FirebaseService from './src/services/FirebaseService';
-import { SettingsProvider } from './src/context/SettingsContext';
+// NotificationService больше не нужен здесь - он инициализируется в SettingsContext
+
 const App = () => {
   const [isAppReady, setIsAppReady] = useState(false);
 
@@ -14,19 +22,23 @@ const App = () => {
         console.log('Initializing database...');
         await DatabaseService.initializeDatabase();
         console.log('Database initialized');
-        
-        // Загружаем настройку аналитики
-        const analyticsEnabled = await DatabaseService.getBooleanSetting('allow_analytics');
+
+        // Загружаем настройку аналитики для Firebase
+        const analyticsEnabled = await DatabaseService.getBooleanSetting(
+          'allow_analytics',
+        );
         console.log('Analytics setting:', analyticsEnabled);
-        
+
         // Инициализируем Firebase
         await FirebaseService.initialize(analyticsEnabled);
-        
+
+        // Уведомления теперь инициализируются в SettingsContext
+        // после загрузки настроек
+
         // Логируем запуск приложения
         await FirebaseService.logEvent('app_launch');
-        
+
         setIsAppReady(true);
-        
       } catch (error) {
         console.error('App initialization error:', error);
         // В любом случае продолжаем

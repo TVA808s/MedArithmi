@@ -1,7 +1,13 @@
-// src/context/SettingsContext.tsx
-import React, {createContext, useContext, useState, useEffect, ReactNode} from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 import DatabaseService from '../services/DatabaseService';
-import FirebaseService from '../services/FirebaseService'; // ← Добавить импорт
+import FirebaseService from '../services/FirebaseService';
+import NotificationService from '../services/NotificationService';
 
 interface SettingsContextType {
   allowAnalytics: boolean;
@@ -9,15 +15,20 @@ interface SettingsContextType {
   updateSetting: (key: string, value: boolean) => Promise<void>;
   isLoading: boolean;
   refreshSettings: () => Promise<void>;
+  testNotification: () => Promise<void>;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+const SettingsContext = createContext<SettingsContextType | undefined>(
+  undefined,
+);
 
 interface SettingsProviderProps {
   children: ReactNode;
 }
 
-export const SettingsProvider: React.FC<SettingsProviderProps> = ({children}) => {
+export const SettingsProvider: React.FC<SettingsProviderProps> = ({
+  children,
+}) => {
   const [allowAnalytics, setAllowAnalytics] = useState<boolean>(true);
   const [allowMessages, setAllowMessages] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -26,14 +37,26 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({children}) =>
     try {
       setIsLoading(true);
       console.log('[SettingsContext] Loading settings from database...');
-      
-      const analytics = await DatabaseService.getBooleanSetting('allow_analytics');
-      const messages = await DatabaseService.getBooleanSetting('allow_messages');
-      
-      console.log('[SettingsContext] Loaded settings:', { analytics, messages });
-      
+
+      const analytics = await DatabaseService.getBooleanSetting(
+        'allow_analytics',
+      );
+      const messages = await DatabaseService.getBooleanSetting(
+        'allow_messages',
+      );
+
+      // ИСПРАВЛЕНО: убрана лишняя запятая
+      console.log('[SettingsContext] Loaded settings:', {analytics, messages});
+
       setAllowAnalytics(analytics);
       setAllowMessages(messages);
+
+      // Если уведомления включены в настройках - планируем их
+      if (messages) {
+        console.log('[SettingsContext] Initializing notifications...');
+        NotificationService.initialize();
+        await NotificationService.scheduleDailyNotification();
+      }
     } catch (error) {
       console.error('[SettingsContext] Error loading settings:', error);
     } finally {
@@ -45,47 +68,82 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({children}) =>
     loadSettings();
   }, []);
 
+  const testNotification = async () => {
+    try {
+      console.log('[SettingsContext] Testing notification...');
+      NotificationService.showTestNotification();
+    } catch (error) {
+      console.error('[SettingsContext] Test notification error:', error);
+    }
+  };
+
   const updateSetting = async (key: string, value: boolean) => {
     try {
       console.log(`[SettingsContext] Updating setting: ${key} = ${value}`);
-      
+
       // Сохраняем в БД
       await DatabaseService.saveSetting(key, value.toString());
-      
-      // Обновляем Firebase если это настройка аналитики
+
       if (key === 'allow_analytics') {
-        console.log(`[SettingsContext] Updating Firebase Analytics: ${value}`);
+        // Обновляем Firebase Analytics
         await FirebaseService.setAnalyticsEnabled(value);
-        
-        // Логируем изменение настройки (если аналитика включена)
-        if (value && FirebaseService.isAnalyticsEnabled()) {
-          await FirebaseService.logEvent('analytics_enabled');
-        } else if (!value) {
-          // Даже если аналитика отключена, пытаемся залогировать через FirebaseService
-          // (он сам проверит состояние)
-          await FirebaseService.logEvent('analytics_disabled');
-        }
-        
         setAllowAnalytics(value);
-      } else if (key === 'allow_messages') {
-        setAllowMessages(value);
-        
-        // Логируем изменение настройки уведомлений
-        if (FirebaseService.isAnalyticsEnabled()) {
-          await FirebaseService.logEvent('notifications_toggle', {
-            enabled: value,
-          });
+
+        // Логируем событие только если включаем аналитику
+        if (value) {
+          await FirebaseService.logEvent('analytics_enabled');
         }
+      } else if (key === 'allow_messages') {
+        if (value) {
+          // Включаем уведомления
+          console.log('[SettingsContext] Enabling notifications...');
+
+          // Инициализируем и планируем уведомления
+          NotificationService.initialize();
+          await NotificationService.scheduleDailyNotification();
+
+          console.log('[SettingsContext] Notifications enabled and scheduled');
+
+          // Логируем включение
+          if (FirebaseService.isAnalyticsEnabled()) {
+            await FirebaseService.logEvent('notifications_enabled');
+          }
+        } else {
+          // Выключаем уведомления
+          console.log('[SettingsContext] Disabling notifications...');
+          await NotificationService.cancelAll();
+
+          console.log('[SettingsContext] All notifications cancelled');
+
+          // Логируем выключение
+          if (FirebaseService.isAnalyticsEnabled()) {
+            await FirebaseService.logEvent('notifications_disabled');
+          }
+        }
+
+        setAllowMessages(value);
       }
-      
-      console.log(`[SettingsContext] Setting updated successfully: ${key} = ${value}`);
+
+      console.log(
+        `[SettingsContext] Setting updated successfully: ${key} = ${value}`,
+      );
     } catch (error) {
       console.error('[SettingsContext] Error updating setting:', error);
-      // Откатываем состояние в UI
+
+      // Откатываем UI состояние при ошибке
       if (key === 'allow_analytics') {
         setAllowAnalytics(!value);
       } else if (key === 'allow_messages') {
         setAllowMessages(!value);
+      }
+
+      // Логируем ошибку если аналитика включена
+      if (FirebaseService.isAnalyticsEnabled()) {
+        await FirebaseService.logEvent('setting_update_error', {
+          key,
+          error_message:
+            error instanceof Error ? error.message : 'Unknown error',
+        });
       }
     }
   };
@@ -100,6 +158,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({children}) =>
     updateSetting,
     isLoading,
     refreshSettings,
+    testNotification,
   };
 
   return (

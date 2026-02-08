@@ -6,13 +6,12 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
-  Alert,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
 import {BottomBar} from '../components/BottomBar';
-import {useSettings} from '../context/SettingsContext'; // ← Используем контекст
+import {useSettings} from '../context/SettingsContext';
 
 type SettingsScreenNavigationProp = StackNavigationProp<
   ScreensList,
@@ -21,7 +20,13 @@ type SettingsScreenNavigationProp = StackNavigationProp<
 
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const { allowAnalytics, allowMessages, updateSetting, isLoading } = useSettings(); // ← Получаем из контекста
+  const {
+    allowAnalytics,
+    allowMessages,
+    updateSetting,
+    testNotification,
+    isLoading,
+  } = useSettings();
 
   const bottomBarItems = [
     {
@@ -38,24 +43,7 @@ export function SettingsScreen() {
 
   const handleAnalyticsToggle = async () => {
     const newValue = !allowAnalytics;
-    
-    // Показываем предупреждение если отключаем аналитику
-    if (newValue === false) {
-      Alert.alert(
-        'Отключение аналитики',
-        'Вы уверены, что хотите отключить анонимную аналитику? Это поможет нам улучшать приложение.',
-        [
-          { text: 'Отмена', style: 'cancel' },
-          { 
-            text: 'Отключить', 
-            style: 'destructive',
-            onPress: () => updateSetting('allow_analytics', newValue)
-          }
-        ]
-      );
-    } else {
-      await updateSetting('allow_analytics', newValue);
-    }
+    await updateSetting('allow_analytics', newValue);
   };
 
   const handleMessagesToggle = async () => {
@@ -82,6 +70,9 @@ export function SettingsScreen() {
               Присылать ежедневные уведомления
             </Text>
           </TouchableOpacity>
+          <Text style={styles.settingDescription}>
+            Ежедневные напоминания о тренировках в 9:00 утра
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -96,6 +87,9 @@ export function SettingsScreen() {
               Разрешить анонимную аналитику использования
             </Text>
           </TouchableOpacity>
+          <Text style={styles.settingDescription}>
+            Помогает улучшать приложение
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -105,17 +99,16 @@ export function SettingsScreen() {
             лабораторные показатели) обрабатываются локально на вашем устройстве
             и не отправляются на наши сервера для хранения.
           </Text>
-          <Text style={styles.privacyText}>
-            • Аналитика: {allowAnalytics ? 
-              "Мы собираем анонимные данные об использовании функций приложения (без ваших персональных данных) для улучшения сервиса." :
-              "Сбор анонимной аналитики отключен."}
-          </Text>
-          <Text style={styles.privacyText}>
-            • Уведомления: {allowMessages ? 
-              "Вы будете получать ежедневные напоминания о тренировках." :
-              "Ежедневные уведомления отключены."}
-          </Text>
         </View>
+
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={testNotification}
+          disabled={isLoading}>
+          <Text style={styles.testButtonText}>
+            {isLoading ? 'Загрузка...' : 'Тест уведомления'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <BottomBar items={bottomBarItems} />
@@ -139,36 +132,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 40,
   },
-  sectionTitle: {
-    fontSize: 21,
-    color: '#A0C28E',
-    marginBottom: 15,
-  },
-  radioOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  radioOuter: {
-    width: 21,
-    height: 21,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#79A162',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#79A162',
-  },
-  radioLabel: {
-    fontSize: 21,
-    color: '#A0C28E',
-  },
   section: {
     marginBottom: 10,
     paddingTop: 20,
@@ -181,6 +144,7 @@ const styles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 8,
   },
   checkboxOuter: {
     width: 22,
@@ -202,6 +166,12 @@ const styles = StyleSheet.create({
     color: '#A0C28E',
     flex: 1,
   },
+  settingDescription: {
+    fontSize: 14,
+    color: '#888',
+    fontStyle: 'italic',
+    marginLeft: 32,
+  },
   privacyTitle: {
     fontSize: 21,
     color: '#A0C28E',
@@ -214,5 +184,17 @@ const styles = StyleSheet.create({
     color: '#A0C28E',
     lineHeight: 20,
     marginBottom: 10,
+  },
+  testButton: {
+    backgroundColor: '#4A90E2',
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

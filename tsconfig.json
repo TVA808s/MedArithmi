@@ -1,12 +1,14 @@
 {
   "extends": "@tsconfig/react-native/tsconfig.json",
   "compilerOptions": {
+    "jsx": "react-native",
     "typeRoots": ["./types", "./node_modules/@types"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@assets/*": ["./assets/*"]
-    }
+    },
+    "types": ["jest"]
   },
   "include": [
     "src/**/*",
