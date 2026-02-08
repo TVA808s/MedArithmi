@@ -6,16 +6,22 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
 import {BottomBar} from '../components/BottomBar';
-import {useSettings} from '../context/SettingsContext'; // ← Заменить
+import {useSettings} from '../context/SettingsContext'; // ← Используем контекст
+
+type SettingsScreenNavigationProp = StackNavigationProp<
+  ScreensList,
+  'Settings'
+>;
 
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const {allowAnalytics, allowMessages, updateSetting, isLoading} = useSettings(); // ← Использовать контекст
+  const { allowAnalytics, allowMessages, updateSetting, isLoading } = useSettings(); // ← Получаем из контекста
 
   const bottomBarItems = [
     {
@@ -30,13 +36,31 @@ export function SettingsScreen() {
     },
   ];
 
-  // Упрощенные обработчики
   const handleAnalyticsToggle = async () => {
-    await updateSetting('allow_analytics', !allowAnalytics);
+    const newValue = !allowAnalytics;
+    
+    // Показываем предупреждение если отключаем аналитику
+    if (newValue === false) {
+      Alert.alert(
+        'Отключение аналитики',
+        'Вы уверены, что хотите отключить анонимную аналитику? Это поможет нам улучшать приложение.',
+        [
+          { text: 'Отмена', style: 'cancel' },
+          { 
+            text: 'Отключить', 
+            style: 'destructive',
+            onPress: () => updateSetting('allow_analytics', newValue)
+          }
+        ]
+      );
+    } else {
+      await updateSetting('allow_analytics', newValue);
+    }
   };
 
   const handleMessagesToggle = async () => {
-    await updateSetting('allow_messages', !allowMessages);
+    const newValue = !allowMessages;
+    await updateSetting('allow_messages', newValue);
   };
 
   return (
@@ -94,7 +118,6 @@ export function SettingsScreen() {
         </View>
       </View>
 
-      {/* Нижний бар */}
       <BottomBar items={bottomBarItems} />
     </SafeAreaView>
   );

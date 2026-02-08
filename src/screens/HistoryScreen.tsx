@@ -13,6 +13,7 @@ import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
 import {BottomBar} from '../components/BottomBar';
 import DatabaseService from '../services/DatabaseService';
+import FirebaseService from '../services/FirebaseService';
 
 type HistoryScreenNavigationProp = StackNavigationProp<ScreensList, 'History'>;
 
@@ -105,21 +106,30 @@ export function HistoryScreen() {
     const loadHistory = async () => {
       try {
         setLoading(true);
-        const data: HistoryItem[] = await DatabaseService.getCalculationHistory(
-          10,
-        );
+        const data: HistoryItem[] = await DatabaseService.getCalculationHistory(10);
+        
+        // Логируем загрузку истории
+        await FirebaseService.logEvent('history_viewed', {
+          item_count: data.length
+        });
+        
         if (data.length === 0) {
           setIsEmpty(true);
           setHistory({});
         } else {
           setIsEmpty(false);
           setTotalCount(data.length);
-          // Группировка по дате
           const grouped = groupByDate(data);
           setHistory(grouped);
         }
       } catch (error) {
         console.error('Ошибка загрузки истории:', error);
+        
+        // Логируем ошибку загрузки истории
+        await FirebaseService.logEvent('history_load_error', {
+          error_message: error instanceof Error ? error.message : 'Unknown error'
+        });
+        
         setIsEmpty(true);
       } finally {
         setLoading(false);
@@ -127,7 +137,7 @@ export function HistoryScreen() {
     };
 
     loadHistory();
-  }, [groupByDate]); // Добавляем groupByDate в зависимости
+  }, [groupByDate]);
 
   // Форматирование времени
   const formatTime = (dateString: string): string => {

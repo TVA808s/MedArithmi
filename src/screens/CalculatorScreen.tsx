@@ -16,6 +16,7 @@ import {KeyboardAvoidingView, Platform} from 'react-native';
 import {BottomBar} from '../components/BottomBar';
 import {usePulse} from '../context/PulseContext';
 import CalculatorService from '../services/CalculatorService';
+import FirebaseService from '../services/FirebaseService';
 
 type CalculatorScreenNavigationProp = StackNavigationProp<
   ScreensList,
@@ -121,8 +122,24 @@ export function CalculatorScreen() {
             zoneMin: calculationResult.zoneLimits.min,
             zoneMax: calculationResult.zoneLimits.max,
           });
+          
+          // Логируем успешный расчет
+          await FirebaseService.logEvent('calculation_completed', {
+            zone: zoneName,
+            age: parseInt(age, 10),
+            resting_hr: parseInt(restingHR, 10),
+            zone_min: calculationResult.zoneLimits.min,
+            zone_max: calculationResult.zoneLimits.max,
+          });
+          
         } catch (error) {
           console.error('Ошибка сохранения:', error);
+          
+          // Логируем ошибку расчета
+          await FirebaseService.logEvent('calculation_error', {
+            zone: zoneName,
+            error_message: error instanceof Error ? error.message : 'Unknown error'
+          });
         }
       }
     };

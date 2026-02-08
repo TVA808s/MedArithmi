@@ -12,7 +12,7 @@ import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
 import {BottomBar} from '../components/BottomBar';
 import {CalculatorCard} from '../components/CalculatorCard';
-
+import {withAnalytics} from '../components/withAnalytics';
 // Тип для навигации
 type MainScreenNavigationProp = StackNavigationProp<ScreensList, 'Main'>;
 
@@ -59,7 +59,7 @@ const calculators = [
     params: {zoneName: 'Максимальная'},
   },
 ];
-
+export default withAnalytics(MainScreen, 'MainScreen');
 export function MainScreen() {
   const navigation = useNavigation<MainScreenNavigationProp>();
   const [_searchQuery, _setSearchQuery] = useState('');

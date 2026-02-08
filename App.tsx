@@ -2,49 +2,52 @@ import React, {useEffect, useState} from 'react';
 import {SafeAreaView, StyleSheet, View, ActivityIndicator, Text} from 'react-native';
 import Navigation from './src/navigation/navigation';
 import {PulseProvider} from './src/context/PulseContext';
-import {SettingsProvider} from './src/context/SettingsContext';
 import DatabaseService from './src/services/DatabaseService';
-
+import FirebaseService from './src/services/FirebaseService';
+import { SettingsProvider } from './src/context/SettingsContext';
 const App = () => {
-  const [isDbInitialized, setIsDbInitialized] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
+  const [isAppReady, setIsAppReady] = useState(false);
 
   useEffect(() => {
-    const initializeDatabase = async () => {
+    const initializeApp = async () => {
       try {
-        console.log('Starting database initialization...');
+        console.log('Initializing database...');
         await DatabaseService.initializeDatabase();
-        console.log('Database initialized successfully');
-        setIsDbInitialized(true);
+        console.log('Database initialized');
+        
+        // Загружаем настройку аналитики
+        const analyticsEnabled = await DatabaseService.getBooleanSetting('allow_analytics');
+        console.log('Analytics setting:', analyticsEnabled);
+        
+        // Инициализируем Firebase
+        await FirebaseService.initialize(analyticsEnabled);
+        
+        // Логируем запуск приложения
+        await FirebaseService.logEvent('app_launch');
+        
+        setIsAppReady(true);
+        
       } catch (error) {
-        console.error('Failed to initialize database:', error);
-        setInitError('Database initialization failed');
-        // Все равно продолжаем через 1.5 секунды
-        setTimeout(() => setIsDbInitialized(true), 1500);
+        console.error('App initialization error:', error);
+        // В любом случае продолжаем
+        setTimeout(() => setIsAppReady(true), 1000);
       }
     };
 
-    initializeDatabase();
+    initializeApp();
   }, []);
 
-  // Показываем индикатор загрузки пока БД не инициализирована
-  if (!isDbInitialized) {
+  if (!isAppReady) {
     return (
-      <SafeAreaView style={styles.loadingScreen}>
-        <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.loadingContainer}>
+        <View style={styles.loadingContent}>
           <ActivityIndicator size="large" color="#79A162" />
-          <Text style={styles.loadingText}>
-            {initError ? 'Продолжаем без базы данных...' : 'Инициализация приложения...'}
-          </Text>
-          {initError && (
-            <Text style={styles.errorText}>{initError}</Text>
-          )}
+          <Text style={styles.loadingText}>Загрузка приложения...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Основное приложение после инициализации БД
   return (
     <SettingsProvider>
       <PulseProvider>
@@ -61,27 +64,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F0F5EE',
   },
-  loadingScreen: {
-    flex: 1,
-    backgroundColor: '#F0F5EE',
-  },
   loadingContainer: {
     flex: 1,
+    backgroundColor: '#F0F5EE',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+  },
+  loadingContent: {
+    alignItems: 'center',
   },
   loadingText: {
     marginTop: 20,
     fontSize: 16,
     color: '#79A162',
-    textAlign: 'center',
-  },
-  errorText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#E75F55',
-    textAlign: 'center',
   },
 });
 

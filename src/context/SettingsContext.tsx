@@ -1,6 +1,7 @@
 // src/context/SettingsContext.tsx
 import React, {createContext, useContext, useState, useEffect, ReactNode} from 'react';
 import DatabaseService from '../services/DatabaseService';
+import FirebaseService from '../services/FirebaseService'; // ← Добавить импорт
 
 interface SettingsContextType {
   allowAnalytics: boolean;
@@ -24,17 +25,17 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({children}) =>
   const loadSettings = async () => {
     try {
       setIsLoading(true);
-      console.log('Loading settings from database...');
+      console.log('[SettingsContext] Loading settings from database...');
       
       const analytics = await DatabaseService.getBooleanSetting('allow_analytics');
       const messages = await DatabaseService.getBooleanSetting('allow_messages');
       
-      console.log('Loaded settings:', { analytics, messages });
+      console.log('[SettingsContext] Loaded settings:', { analytics, messages });
       
       setAllowAnalytics(analytics);
       setAllowMessages(messages);
     } catch (error) {
-      console.error('Error loading settings:', error);
+      console.error('[SettingsContext] Error loading settings:', error);
     } finally {
       setIsLoading(false);
     }
@@ -46,19 +47,46 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({children}) =>
 
   const updateSetting = async (key: string, value: boolean) => {
     try {
-      console.log(`Updating setting: ${key} = ${value}`);
+      console.log(`[SettingsContext] Updating setting: ${key} = ${value}`);
+      
+      // Сохраняем в БД
       await DatabaseService.saveSetting(key, value.toString());
       
-      // Обновляем локальное состояние
+      // Обновляем Firebase если это настройка аналитики
       if (key === 'allow_analytics') {
+        console.log(`[SettingsContext] Updating Firebase Analytics: ${value}`);
+        await FirebaseService.setAnalyticsEnabled(value);
+        
+        // Логируем изменение настройки (если аналитика включена)
+        if (value && FirebaseService.isAnalyticsEnabled()) {
+          await FirebaseService.logEvent('analytics_enabled');
+        } else if (!value) {
+          // Даже если аналитика отключена, пытаемся залогировать через FirebaseService
+          // (он сам проверит состояние)
+          await FirebaseService.logEvent('analytics_disabled');
+        }
+        
         setAllowAnalytics(value);
       } else if (key === 'allow_messages') {
         setAllowMessages(value);
+        
+        // Логируем изменение настройки уведомлений
+        if (FirebaseService.isAnalyticsEnabled()) {
+          await FirebaseService.logEvent('notifications_toggle', {
+            enabled: value,
+          });
+        }
       }
       
-      console.log(`Setting updated successfully: ${key} = ${value}`);
+      console.log(`[SettingsContext] Setting updated successfully: ${key} = ${value}`);
     } catch (error) {
-      console.error('Error updating setting:', error);
+      console.error('[SettingsContext] Error updating setting:', error);
+      // Откатываем состояние в UI
+      if (key === 'allow_analytics') {
+        setAllowAnalytics(!value);
+      } else if (key === 'allow_messages') {
+        setAllowMessages(!value);
+      }
     }
   };
 

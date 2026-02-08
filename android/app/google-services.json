@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "678837182505",
+    "project_id": "pulsesport-14d2a",
+    "storage_bucket": "pulsesport-14d2a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:678837182505:android:bf9ee5c660ab3a8e873c38",
+        "android_client_info": {
+          "package_name": "com.medarithmi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaepwW0cZ83Q9UlLjLCgUKomhsg87huqE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
