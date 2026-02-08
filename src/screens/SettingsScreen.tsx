@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,15 +11,12 @@ import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
 import {BottomBar} from '../components/BottomBar';
-
-// необходима типизация переменной navigation
-type SettingsScreenNavigationProp = StackNavigationProp<
-  ScreensList,
-  'Settings'
->;
+import {useSettings} from '../context/SettingsContext'; // ← Заменить
 
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const {allowAnalytics, allowMessages, updateSetting, isLoading} = useSettings(); // ← Использовать контекст
+
   const bottomBarItems = [
     {
       iconName: 'back' as const,
@@ -32,60 +29,42 @@ export function SettingsScreen() {
       key: 'history-btn',
     },
   ];
-  const [selectedFontSize, setSelectedFontSize] = useState<
-    'small' | 'medium' | 'large'
-  >('medium');
-  const [allowAnalytics, setAllowAnalytics] = useState<boolean>(false);
+
+  // Упрощенные обработчики
+  const handleAnalyticsToggle = async () => {
+    await updateSetting('allow_analytics', !allowAnalytics);
+  };
+
+  const handleMessagesToggle = async () => {
+    await updateSetting('allow_messages', !allowMessages);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Верхний бар */}
       <StatusBar barStyle="dark-content" backgroundColor="#F0F5EE" />
 
-      {/* Основной контент */}
       <View style={styles.content}>
         <Text style={styles.title}>Настройки</Text>
-        <Text style={styles.sectionTitle}>Размер текста</Text>
 
-        <View style={styles.radioGroup}>
+        <View style={styles.sectionFirst}>
           <TouchableOpacity
-            style={styles.radioOption}
-            onPress={() => setSelectedFontSize('small')}>
-            <View style={styles.radioOuter}>
-              {selectedFontSize === 'small' && (
-                <View style={styles.radioInner} />
-              )}
+            style={styles.checkboxContainer}
+            onPress={handleMessagesToggle}
+            disabled={isLoading}>
+            <View style={styles.checkboxOuter}>
+              {allowMessages && <Text style={styles.checkmark}>✓</Text>}
             </View>
-            <Text style={styles.radioLabel}>Маленький</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.radioOption}
-            onPress={() => setSelectedFontSize('medium')}>
-            <View style={styles.radioOuter}>
-              {selectedFontSize === 'medium' && (
-                <View style={styles.radioInner} />
-              )}
-            </View>
-            <Text style={styles.radioLabel}>Средний</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.radioOption}
-            onPress={() => setSelectedFontSize('large')}>
-            <View style={styles.radioOuter}>
-              {selectedFontSize === 'large' && (
-                <View style={styles.radioInner} />
-              )}
-            </View>
-            <Text style={styles.radioLabel}>Крупный</Text>
+            <Text style={styles.checkboxLabel}>
+              Присылать ежедневные уведомления
+            </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.checkboxContainer}
-            onPress={() => setAllowAnalytics(!allowAnalytics)}>
+            onPress={handleAnalyticsToggle}
+            disabled={isLoading}>
             <View style={styles.checkboxOuter}>
               {allowAnalytics && <Text style={styles.checkmark}>✓</Text>}
             </View>
@@ -103,8 +82,14 @@ export function SettingsScreen() {
             и не отправляются на наши сервера для хранения.
           </Text>
           <Text style={styles.privacyText}>
-            • Аналитика: Мы собираем анонимные данные об использовании функций
-            приложения (без ваших персональных данных) для улучшения сервиса.
+            • Аналитика: {allowAnalytics ? 
+              "Мы собираем анонимные данные об использовании функций приложения (без ваших персональных данных) для улучшения сервиса." :
+              "Сбор анонимной аналитики отключен."}
+          </Text>
+          <Text style={styles.privacyText}>
+            • Уведомления: {allowMessages ? 
+              "Вы будете получать ежедневные напоминания о тренировках." :
+              "Ежедневные уведомления отключены."}
           </Text>
         </View>
       </View>
@@ -166,6 +151,9 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: '#fdbcbd',
+  },
+  sectionFirst: {
+    marginBottom: 10,
   },
   checkboxContainer: {
     flexDirection: 'row',

@@ -1,30 +1,37 @@
 import SQLite from 'react-native-sqlite-storage';
 
-// Открываем/создаем базу данных
 const databaseName = 'PulseSportDB.db';
 
-// Отключение логов в продакшене
+export const SETTINGS_KEYS = {
+  ALLOW_ANALYTICS: 'allow_analytics',
+  ALLOW_MESSAGES: 'allow_messages',
+} as const;
+
 SQLite.enablePromise(true);
 
 class DatabaseService {
   private db: SQLite.SQLiteDatabase | null = null;
 
-  // Инициализация базы данных
   async initializeDatabase(): Promise<void> {
     try {
+      console.log('Opening database...');
       this.db = await SQLite.openDatabase({
         name: databaseName,
         location: 'default',
       });
-
+      console.log('Database opened');
+      
       await this.createTables();
-      console.log('Database initialized successfully');
+      console.log('Tables created');
+      
+      await this.initializeDefaultSettings();
+      console.log('Default settings initialized');
     } catch (error) {
       console.error('Database initialization error:', error);
+      throw error;
     }
   }
 
-  // Создание таблиц
   private async createTables(): Promise<void> {
     const queries = [
       `CREATE TABLE IF NOT EXISTS calculations (
@@ -50,10 +57,25 @@ class DatabaseService {
     }
   }
 
-  // Выполнение запроса
+  private async initializeDefaultSettings(): Promise<void> {
+    try {
+      const existingAnalytics = await this.getSetting(SETTINGS_KEYS.ALLOW_ANALYTICS);
+      if (existingAnalytics === null) {
+        await this.saveSetting(SETTINGS_KEYS.ALLOW_ANALYTICS, 'true');
+      }
+
+      const existingMessages = await this.getSetting(SETTINGS_KEYS.ALLOW_MESSAGES);
+      if (existingMessages === null) {
+        await this.saveSetting(SETTINGS_KEYS.ALLOW_MESSAGES, 'true');
+      }
+    } catch (error) {
+      console.error('Error initializing default settings:', error);
+    }
+  }
+
   private async executeQuery<T>(sql: string, params: any[]): Promise<T[]> {
     if (!this.db) {
-      await this.initializeDatabase();
+      throw new Error('Database not initialized');
     }
 
     return new Promise((resolve, reject) => {
@@ -77,9 +99,26 @@ class DatabaseService {
     });
   }
 
-  // ============== ОСНОВНЫЕ МЕТОДЫ ==============
+  async saveSetting(key: string, value: string): Promise<void> {
+    const query = `
+      INSERT OR REPLACE INTO user_settings (key, value) 
+      VALUES (?, ?)
+    `;
 
-  // Сохранение расчета
+    await this.executeQuery(query, [key, value]);
+  }
+
+  async getSetting(key: string): Promise<string | null> {
+    const query = 'SELECT value FROM user_settings WHERE key = ?';
+    const result = await this.executeQuery<{value: string}>(query, [key]);
+    return result[0]?.value || null;
+  }
+
+  async getBooleanSetting(key: string): Promise<boolean> {
+    const value = await this.getSetting(key);
+    return value === 'true';
+  }
+
   async saveCalculation(data: {
     zoneName: string;
     age: number;
@@ -105,7 +144,6 @@ class DatabaseService {
     return result[0]?.insertId || -1;
   }
 
-  // Получение истории расчетов
   async getCalculationHistory(limit: number = 50): Promise<any[]> {
     const query = `
       SELECT * FROM calculations 
@@ -116,63 +154,6 @@ class DatabaseService {
     return await this.executeQuery(query, [limit]);
   }
 
-  // Получение расчетов по зоне
-  async getCalculationsByZone(zoneName: string): Promise<any[]> {
-    const query = `
-      SELECT * FROM calculations 
-      WHERE zone_name = ? 
-      ORDER BY calculation_date DESC
-    `;
-
-    return await this.executeQuery(query, [zoneName]);
-  }
-
-  // Удаление расчета
-  async deleteCalculation(id: number): Promise<boolean> {
-    try {
-      const query = 'DELETE FROM calculations WHERE id = ?';
-      await this.executeQuery(query, [id]);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  // Очистка всей истории
-  async clearAllHistory(): Promise<boolean> {
-    try {
-      await this.executeQuery('DELETE FROM calculations', []);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  // Сохранение пользовательских настроек
-  async saveSetting(key: string, value: string): Promise<void> {
-    const query = `
-      INSERT OR REPLACE INTO user_settings (key, value) 
-      VALUES (?, ?)
-    `;
-
-    await this.executeQuery(query, [key, value]);
-  }
-
-  // Получение настройки
-  async getSetting(key: string): Promise<string | null> {
-    const query = 'SELECT value FROM user_settings WHERE key = ?';
-    const result = await this.executeQuery<{value: string}>(query, [key]);
-    return result[0]?.value || null;
-  }
-
-  // Закрытие базы данных
-  async closeDatabase(): Promise<void> {
-    if (this.db) {
-      await this.db.close();
-      this.db = null;
-    }
-  }
-  // Поддержка верней панели
   async getLastCalculation(): Promise<{
     zoneRange: string;
     restingHR: string;
@@ -183,7 +164,7 @@ class DatabaseService {
         FROM calculations 
         ORDER BY calculation_date DESC 
         LIMIT 1
-        `;
+      `;
 
       const result = await this.executeQuery<any>(query, []);
 
@@ -200,6 +181,42 @@ class DatabaseService {
       return null;
     }
   }
+
+  async getCalculationsByZone(zoneName: string): Promise<any[]> {
+    const query = `
+      SELECT * FROM calculations 
+      WHERE zone_name = ? 
+      ORDER BY calculation_date DESC
+    `;
+
+    return await this.executeQuery(query, [zoneName]);
+  }
+
+  async deleteCalculation(id: number): Promise<boolean> {
+    try {
+      const query = 'DELETE FROM calculations WHERE id = ?';
+      await this.executeQuery(query, [id]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async clearAllHistory(): Promise<boolean> {
+    try {
+      await this.executeQuery('DELETE FROM calculations', []);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async closeDatabase(): Promise<void> {
+    if (this.db) {
+      await this.db.close();
+      this.db = null;
+    }
+  }
 }
-// Экспортируем singleton экземпляр
+
 export default new DatabaseService();
