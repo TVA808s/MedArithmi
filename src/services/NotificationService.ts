@@ -1,202 +1,179 @@
-import PushNotification, {Importance} from 'react-native-push-notification';
-import {Platform} from 'react-native';
+import {Platform, NativeModules} from 'react-native';
 
-// База ежедневных сообщений
-const DAILY_NOTIFICATIONS = [
-  {
-    id: 'workout_reminder_1',
-    title: '🏃 Время для тренировки!',
-    message:
-      'Ваше тело ждет активности! Рассчитайте сегодняшнюю пульсовую зону.',
-  },
-  {
-    id: 'health_tip_1',
-    title: '💖 Здоровье сердца',
-    message:
-      'Регулярные тренировки в правильной зоне пульса укрепляют сердечно-сосудистую систему.',
-  },
-];
+interface NotificationModule {
+  showNotification(title: string, message: string): Promise<number>;
+  scheduleDailyNotification(title: string, message: string, hour: number, minute: number): Promise<boolean>;
+  cancelScheduledNotification(): Promise<void>; // уже правильно
+}
+
+
 
 class NotificationService {
-  private channelId = 'daily_reminders';
-  private isChannelCreated = false;
+  private readonly isAndroid = Platform.OS === 'android';
+  private notificationModule: NotificationModule | null = null;
+  
+  // Все уведомления в одной категории (14 сообщений)
+  private readonly allMessages = [
+    {
+      title: '🏃 Время для активности!',
+      message: 'Проверьте свою пульсовую зону перед тренировкой в PulseSport.'
+    },
+    {
+      title: '💓 Здоровье сердца',
+      message: 'Контроль пульса снижает риск сердечных заболеваний. Откройте приложение для расчёта.'
+    },
+    {
+      title: '📱 PulseSport напоминает',
+      message: 'Рассчитайте оптимальную нагрузку по вашему пульсу сегодня.'
+    },
+    {
+      title: '⚡ Энергия для дня',
+      message: 'Умеренная активность в правильной зоне пульса даёт энергию. Проверьте свою зону!'
+    },
+    {
+      title: '🎯 Точный расчёт',
+      message: 'Используйте PulseSport для расчёта персональной зоны пульса прямо сейчас.'
+    },
+    {
+      title: '❤️ Забота о сердце',
+      message: 'Регулярный контроль пульса - лучшая профилактика. Не забывайте о своём сердце!'
+    },
+    {
+      title: '🌟 Ты можешь больше!',
+      message: 'Твой пульс покажет, на что ты способен. Проверь в PulseSport!'
+    },
+    {
+      title: '🔥 Зажги своё сердце!',
+      message: 'Правильная нагрузка - ключ к энергии. Рассчитай свою зону пульса!'
+    },
+    {
+      title: '🏋️‍♂️ Время тренировки!',
+      message: 'Рассчитайте пульсовую зону в PulseSport для эффективной и безопасной нагрузки.'
+    },
+    {
+      title: '📊 Ваш прогресс',
+      message: 'Отслеживайте изменения пульса в PulseSport для анализа эффективности тренировок.'
+    },
+    {
+      title: '🩺 Медицинский контроль',
+      message: 'Регулярный мониторинг пульса в приложении помогает следить за здоровьем.'
+    },
+    {
+      title: '⚡ Заряд энергии',
+      message: 'Короткая активность в правильной зоне пульса освежает. Проверьте свою зону!'
+    },
+    {
+      title: '🚀 Вперёд к целям!',
+      message: 'Контролируй пульс, достигай результатов с PulseSport.'
+    },
+    {
+      title: '🔔 Регулярные напоминания',
+      message: 'Не забывайте проверять пульс. PulseSport поможет сохранить регулярность.'
+    }
+  ];
 
-  // Инициализация
+  constructor() {
+    this.initialize();
+  }
+
   initialize(): void {
-    if (Platform.OS !== 'android') {
-      return;
+    if (this.isAndroid) {
+      this.notificationModule = NativeModules.NotificationModule;
+      console.log('NotificationService initialized');
     }
-
-    console.log('[Notification] Инициализация...');
-
-    // Создаем канал если еще не создан
-    if (!this.isChannelCreated) {
-      this.createChannel();
-    }
-
-    // Конфигурируем библиотеку
-    PushNotification.configure({
-      onRegister: token => {
-        console.log('[Notification] Токен:', token);
-      },
-      onNotification: notification => {
-        console.log('[Notification] Получено:', notification);
-        notification.finish(PushNotification.FetchResult.NoData);
-      },
-      requestPermissions: true,
-      popInitialNotification: true,
-    });
-
-    console.log('[Notification] Готово');
   }
 
-  // Создание канала
-  private createChannel(): void {
-    if (Platform.OS !== 'android') {
-      return;
+  isAvailable(): boolean {
+    return this.isAndroid && this.notificationModule !== null;
+  }
+
+  async sendNotification(title: string, message: string): Promise<number | null> {
+    if (!this.isAvailable()) {
+      console.warn('Notification module not available');
+      return null;
     }
 
-    console.log('[Notification] Создаю канал...');
+    try {
+      const notificationId = await this.notificationModule!.showNotification(title, message);
+      console.log(`Notification sent: "${title}" (ID: ${notificationId})`);
+      return notificationId;
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      return null;
+    }
+  }
 
-    PushNotification.createChannel(
-      {
-        channelId: this.channelId,
-        channelName: 'Напоминания',
-        channelDescription: 'Напоминания о тренировках',
-        importance: Importance.HIGH,
-        vibrate: true,
-        vibration: 300,
-        playSound: true,
-        soundName: 'default',
-      },
-      created => {
-        this.isChannelCreated = true;
-        console.log(
-          `[Notification] Канал "${this.channelId}" создан: ${created}`,
-        );
-      },
+  getRandomMessage() {
+    return this.allMessages[Math.floor(Math.random() * this.allMessages.length)];
+  }
+
+  async sendRandomNotification(): Promise<number | null> {
+    const message = this.getRandomMessage();
+    return this.sendNotification(message.title, message.message);
+  }
+
+  async showTestNotification(): Promise<void> {
+    console.log('Showing test notification...');
+    await this.sendNotification(
+      '🔔 Test Notification',
+      'This is a test notification from PulseSport'
     );
   }
 
-  // ТЕСТОВОЕ уведомление
-  showTestNotification(): void {
-    if (Platform.OS !== 'android') {
-      return;
+  // Запланировать ежедневное уведомление на 9:00
+  async scheduleDailyNotification(): Promise<boolean> {
+    if (!this.isAvailable()) {
+      console.warn('Cannot schedule notification: module not available');
+      return false;
     }
 
-    console.log('[Notification] Тестовое уведомление...');
-
-    this.initialize();
-
-    PushNotification.localNotification({
-      id: 'test_' + Date.now(),
-      title: '🔔 Тест уведомления',
-      message: 'Это тестовое уведомление ' + new Date().toLocaleTimeString(),
-      channelId: this.channelId,
-      smallIcon: 'ic_notification',
-      largeIcon: 'ic_launcher',
-      color: '#E75F55',
-      playSound: true,
-      soundName: 'default',
-      vibrate: true,
-      vibration: 300,
-      priority: 'high',
-      importance: 'high',
-      autoCancel: true,
-      userInfo: {
-        type: 'test',
-        timestamp: Date.now().toString(),
-      },
-    });
-
-    console.log('[Notification] Уведомление отправлено');
+    console.log('NotificationService: Scheduling daily notification...');
+    
+    try {
+      const message = this.getRandomMessage();
+      console.log('NotificationService: Selected message:', message);
+      
+      console.log('NotificationService: Calling native module...');
+      const result = await this.notificationModule!.scheduleDailyNotification(
+        message.title,
+        message.message,
+        21, // час (20:30)
+        33,  // минута
+      );
+      
+      console.log('NotificationService: Scheduling result:', result);
+      return result;
+    } catch (error: any) {
+      console.error('NotificationService: Error scheduling notification:', error);
+      console.error('NotificationService: Error message:', error.message);
+      console.error('NotificationService: Error stack:', error.stack);
+      return false;
+    }
   }
 
-  // Запланировать ежедневное уведомление
-  async scheduleDailyNotification(): Promise<void> {
-    if (Platform.OS !== 'android') {
-      return;
-    }
-
-    console.log('[Notification] Планирование ежедневного уведомления...');
-
-    this.initialize();
-
-    // Проверяем есть ли уже запланированные уведомления
-    const hasScheduled = await this.hasScheduledNotifications();
-    if (hasScheduled) {
-      console.log('[Notification] Уведомления уже запланированы');
-      return;
-    }
-
-    const randomIndex = Math.floor(Math.random() * DAILY_NOTIFICATIONS.length);
-    const notification = DAILY_NOTIFICATIONS[randomIndex];
-
-    // Завтра в 9:00
-    const triggerTime = new Date();
-    triggerTime.setDate(triggerTime.getDate() + 1);
-    triggerTime.setHours(9, 0, 0, 0);
-
-    // Удаляем старые уведомления с таким же ID
-    PushNotification.cancelLocalNotification({id: 'daily_' + notification.id});
-
-    // Планируем новое
-    PushNotification.localNotificationSchedule({
-      id: 'daily_' + notification.id,
-      title: notification.title,
-      message: notification.message,
-      channelId: this.channelId,
-      date: triggerTime,
-      repeatType: 'day',
-      allowWhileIdle: true,
-      smallIcon: 'ic_notification',
-      largeIcon: 'ic_launcher',
-      color: '#E75F55',
-      playSound: true,
-      soundName: 'default',
-      vibrate: true,
-      vibration: 300,
-      priority: 'high',
-      importance: 'high',
-      autoCancel: true,
-      userInfo: {
-        type: 'daily_reminder',
-        id: notification.id,
-      },
-    });
-
-    console.log(
-      `[Notification] Ежедневное уведомление запланировано на: ${triggerTime.toLocaleDateString()} ${triggerTime.toLocaleTimeString()}`,
-    );
-  }
-
-  // Проверить есть ли запланированные уведомления
-  private hasScheduledNotifications(): Promise<boolean> {
-    return new Promise(resolve => {
-      if (Platform.OS !== 'android') {
-        resolve(false);
-        return;
+  // Отменить все запланированные уведомления
+  async cancelAll(): Promise<void> {
+    console.log('Cancelling all scheduled notifications...');
+    
+    try {
+      if (this.isAvailable()) {
+        await this.notificationModule!.cancelScheduledNotification();
       }
-
-      PushNotification.getScheduledLocalNotifications(notifications => {
-        const hasDaily = notifications?.some(
-          n =>
-            n.id?.startsWith('daily_') || n.userInfo?.type === 'daily_reminder',
-        );
-        resolve(hasDaily || false);
-      });
-    });
+      console.log('All notifications cancelled');
+    } catch (error) {
+      console.error('Error cancelling notifications:', error);
+    }
   }
 
-  // Отмена всех уведомлений
-  cancelAll(): void {
-    if (Platform.OS !== 'android') {
-      return;
-    }
-
-    PushNotification.cancelAllLocalNotifications();
-    console.log('[Notification] Все уведомления отменены');
+  getServiceStatus() {
+    return {
+      isAndroid: this.isAndroid,
+      moduleAvailable: this.isAvailable(),
+      totalMessages: this.allMessages.length,
+      initialized: true
+    };
   }
 }
 
-export default new NotificationService();
+const notificationService = new NotificationService();
+export default notificationService;

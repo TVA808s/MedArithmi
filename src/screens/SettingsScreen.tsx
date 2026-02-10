@@ -6,12 +6,14 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
 import {BottomBar} from '../components/BottomBar';
 import {useSettings} from '../context/SettingsContext';
+import notificationService from '../services/NotificationService'; // Импортируем сервис уведомлений
 
 type SettingsScreenNavigationProp = StackNavigationProp<
   ScreensList,
@@ -20,6 +22,8 @@ type SettingsScreenNavigationProp = StackNavigationProp<
 
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const [isTesting, setIsTesting] = React.useState(false);
+  
   const {
     allowAnalytics,
     allowMessages,
@@ -49,6 +53,41 @@ export function SettingsScreen() {
   const handleMessagesToggle = async () => {
     const newValue = !allowMessages;
     await updateSetting('allow_messages', newValue);
+  };
+
+  // Функция для отправки тестового уведомления
+  const handleTestNotification = async () => {
+    if (isTesting) return;
+    
+    setIsTesting(true);
+    
+    try {
+      // Отправляем случайное уведомление
+      const notificationId = await notificationService.sendRandomNotification();
+      
+      if (notificationId !== null) {
+        Alert.alert(
+          '✅ Уведомление отправлено',
+          `ID: ${notificationId}\n\nПроверьте панель уведомлений вашего устройства.`,
+          [{text: 'OK'}]
+        );
+      } else {
+        Alert.alert(
+          '❌ Ошибка отправки',
+          'Не удалось отправить уведомление. Проверьте настройки устройства.',
+          [{text: 'OK'}]
+        );
+      }
+    } catch (error) {
+      console.error('Ошибка при отправке уведомления:', error);
+      Alert.alert(
+        '❌ Ошибка',
+        'Произошла ошибка при отправке уведомления.',
+        [{text: 'OK'}]
+      );
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   return (
@@ -102,13 +141,14 @@ export function SettingsScreen() {
         </View>
 
         <TouchableOpacity
-          style={styles.testButton}
-          onPress={testNotification}
-          disabled={isLoading}>
+          style={[styles.testButton, isTesting && styles.testButtonDisabled]}
+          onPress={handleTestNotification}
+          disabled={isTesting || isLoading}>
           <Text style={styles.testButtonText}>
-            {isLoading ? 'Загрузка...' : 'Тест уведомления'}
+            {isTesting ? 'Отправка...' : isLoading ? 'Загрузка...' : 'Тест уведомления'}
           </Text>
         </TouchableOpacity>
+
       </View>
 
       <BottomBar items={bottomBarItems} />
@@ -166,12 +206,6 @@ const styles = StyleSheet.create({
     color: '#A0C28E',
     flex: 1,
   },
-  settingDescription: {
-    fontSize: 14,
-    color: '#888',
-    fontStyle: 'italic',
-    marginLeft: 32,
-  },
   privacyTitle: {
     fontSize: 21,
     color: '#A0C28E',
@@ -191,6 +225,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 30,
     alignItems: 'center',
+  },
+  testButtonDisabled: {
+    backgroundColor: '#A0C0E0',
+    opacity: 0.7,
   },
   testButtonText: {
     color: 'white',

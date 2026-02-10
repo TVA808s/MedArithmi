@@ -11,7 +11,6 @@ import {PulseProvider} from './src/context/PulseContext';
 import {SettingsProvider} from './src/context/SettingsContext';
 import DatabaseService from './src/services/DatabaseService';
 import FirebaseService from './src/services/FirebaseService';
-// NotificationService больше не нужен здесь - он инициализируется в SettingsContext
 
 const App = () => {
   const [isAppReady, setIsAppReady] = useState(false);
@@ -31,9 +30,6 @@ const App = () => {
 
         // Инициализируем Firebase
         await FirebaseService.initialize(analyticsEnabled);
-
-        // Уведомления теперь инициализируются в SettingsContext
-        // после загрузки настроек
 
         // Логируем запуск приложения
         await FirebaseService.logEvent('app_launch');

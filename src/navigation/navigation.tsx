@@ -18,7 +18,6 @@ const Navigation = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Loading"
         screenOptions={{
           header: TopBarWrapper,
         }}>
@@ -26,6 +25,7 @@ const Navigation = () => {
         <Stack.Screen name="Calculator" component={CalculatorScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="History" component={HistoryScreen} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );
