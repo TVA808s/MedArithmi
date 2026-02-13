@@ -103,13 +103,37 @@ class DatabaseService {
     });
   }
 
+  // Новый метод для выполнения запросов без возврата данных (INSERT, UPDATE, DELETE)
+  private async executeAction(sql: string, params: any[]): Promise<boolean> {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
+    return new Promise((resolve, reject) => {
+      this.db!.transaction(tx => {
+        tx.executeSql(
+          sql,
+          params,
+          (_, results) => {
+            // Для DELETE запросов проверяем, были ли затронуты строки
+            resolve(results.rowsAffected > 0);
+          },
+          (_, error) => {
+            reject(error);
+            return false;
+          },
+        );
+      });
+    });
+  }
+
   async saveSetting(key: string, value: string): Promise<void> {
     const query = `
       INSERT OR REPLACE INTO user_settings (key, value) 
       VALUES (?, ?)
     `;
 
-    await this.executeQuery(query, [key, value]);
+    await this.executeAction(query, [key, value]);
   }
 
   async getSetting(key: string): Promise<string | null> {
@@ -199,18 +223,12 @@ class DatabaseService {
   async deleteCalculation(id: number): Promise<boolean> {
     try {
       const query = 'DELETE FROM calculations WHERE id = ?';
-      await this.executeQuery(query, [id]);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async clearAllHistory(): Promise<boolean> {
-    try {
-      await this.executeQuery('DELETE FROM calculations', []);
-      return true;
-    } catch {
+      // Используем новый метод executeAction для DELETE запросов
+      const result = await this.executeAction(query, [id]);
+      console.log('Delete result:', result); // Для отладки
+      return result;
+    } catch (error) {
+      console.error('Error deleting calculation:', error);
       return false;
     }
   }

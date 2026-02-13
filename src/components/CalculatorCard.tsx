@@ -109,7 +109,7 @@ export const CalculatorCard: React.FC<CalculatorCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    width: '80%',
+    width: '84%',
     minHeight: 120,
     borderRadius: 24,
     padding: 20,

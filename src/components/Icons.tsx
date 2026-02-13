@@ -16,7 +16,10 @@ export type IconName =
   | 'heart'
   | 'lightning'
   | 'plant'
-  | 'star';
+  | 'star'
+  | 'heart2'
+  | 'person'
+  | 'pulse';
 
 // возможные пропсы
 export interface IconProps extends TouchableOpacityProps {
@@ -38,6 +41,9 @@ const ICON_MAP: Record<IconName, any> = {
   lightning: require('../assets/icons/Lightning.png'),
   plant: require('../assets/icons/Plant.png'),
   star: require('../assets/icons/Star.png'),
+  pulse: require('../assets/icons/Pulse.png'),
+  person: require('../assets/icons/Person.png'),
+  heart2: require('../assets/icons/Heart2.png'),
 };
 
 const Icon: React.FC<IconProps> = ({

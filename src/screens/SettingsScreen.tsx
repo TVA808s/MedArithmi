@@ -153,7 +153,6 @@ export function SettingsScreen() {
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -161,28 +160,34 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 40,
-    paddingHorizontal: '10%',
+    paddingTop: 30,
+    alignItems: 'center', // Центрируем содержимое
+    paddingHorizontal: '8%', // Такой же отступ как у title на MainScreen
   },
   title: {
     color: '#E75F55',
     fontSize: 24,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: 30,
+    lineHeight: 36, // Как у title на MainScreen
+    width: '100%', // На всю ширину
   },
   section: {
     marginBottom: 10,
     paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: '#fdbcbd',
+    width: '100%', // На всю ширину
   },
   sectionFirst: {
     marginBottom: 10,
+    width: '100%', // На всю ширину
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    width: '100%', // На всю ширину
   },
   checkboxOuter: {
     width: 22,
@@ -204,6 +209,12 @@ const styles = StyleSheet.create({
     color: '#A0C28E',
     flex: 1,
   },
+  settingDescription: {
+    fontSize: 14,
+    color: '#7A7A7A',
+    marginLeft: 32, // Отступ под чекбокс
+    marginBottom: 10,
+  },
   privacyTitle: {
     fontSize: 21,
     color: '#A0C28E',
@@ -223,6 +234,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 30,
     alignItems: 'center',
+    width: '100%', // На всю ширину
+    shadowColor: '#000', // Тень как у карточек
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   testButtonDisabled: {
     backgroundColor: '#A0C0E0',

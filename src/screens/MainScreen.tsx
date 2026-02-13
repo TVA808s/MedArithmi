@@ -106,7 +106,9 @@ export function MainScreen() {
 
       {/* Основной контент */}
       <View style={styles.content}>
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <ScrollView
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}>
           <Text style={styles.title}>
             Выберите предпочитаемый уровень нагрузки
           </Text>
@@ -141,7 +143,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 40,
+    paddingTop: 30,
   },
   scrollViewContent: {
     alignItems: 'center',
@@ -154,6 +156,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 36,
-    marginHorizontal: '10%',
+    marginHorizontal: '8%',
   },
 });

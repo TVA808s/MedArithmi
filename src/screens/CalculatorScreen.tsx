@@ -169,7 +169,9 @@ export function CalculatorScreen() {
         style={styles.keyboardAvoid}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}>
           <View style={styles.HeadingContainer}>
             <Text style={styles.Heading}>{zoneName}</Text>
             <Text style={styles.HeadingHint}>
@@ -270,7 +272,6 @@ export function CalculatorScreen() {
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -281,18 +282,21 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 40,
-    paddingHorizontal: '10%',
+    paddingTop: 30,
+    alignItems: 'center', // Центрируем содержимое
+    paddingHorizontal: '8%', // Такой же отступ как у title на MainScreen
   },
   HeadingContainer: {
-    marginBottom: 40,
+    marginBottom: 30,
     alignItems: 'center',
     gap: 10,
+    width: '100%', // На всю ширину
   },
   Heading: {
     fontSize: 24,
     color: '#E75F55',
     textAlign: 'center',
+    lineHeight: 36, // Как у title на MainScreen
   },
   HeadingHint: {
     color: '#E75F55',
@@ -301,13 +305,14 @@ const styles = StyleSheet.create({
   },
   InputContainer: {
     alignSelf: 'center',
-    width: '100%',
+    width: '100%', // На всю ширину
   },
   InputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 15,
+    width: '100%', // На всю ширину
   },
   InputText: {
     fontSize: 21,
@@ -334,6 +339,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#C0C0C0',
     marginVertical: 15,
+    width: '100%', // На всю ширину
   },
   errorText: {
     fontSize: 16,
@@ -341,13 +347,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 2,
     height: 20,
+    width: '100%', // На всю ширину
   },
   resultContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 15, // Как у карточек на HistoryScreen
     marginVertical: 20,
     padding: 15,
-    width: '100%',
+    width: '100%', // На всю ширину
+    shadowColor: '#000', // Тень как у карточек
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   resultHeader: {
     borderBottomWidth: 1,
@@ -404,6 +416,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderWidth: 1,
     borderColor: '#A0C28E',
+    width: '100%', // На всю ширину
   },
   initialHintText: {
     fontSize: 20,
