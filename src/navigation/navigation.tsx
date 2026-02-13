@@ -25,7 +25,6 @@ const Navigation = () => {
         <Stack.Screen name="Calculator" component={CalculatorScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="History" component={HistoryScreen} />
-
       </Stack.Navigator>
     </NavigationContainer>
   );

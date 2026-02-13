@@ -16,49 +16,73 @@ import {CalculatorCard} from '../components/CalculatorCard';
 // Тип для навигации
 type MainScreenNavigationProp = StackNavigationProp<ScreensList, 'Main'>;
 
-// данные калькуляторов (без категорий)
 const calculators = [
   {
     id: '1',
     title: 'Восстановление',
     description:
-      'Активное восстановление организма, улучшение кровотока. Идеально для разминки, заминки и лёгких восстановительных дней.',
+      'Улучшение кровотока и активное восстановление. Для разминки и заминки.',
     navigateTo: 'Calculator' as const,
     params: {zoneName: 'Восстановление'},
+    iconName: 'plant' as const,
+    iconSize: 42,
+    backgroundColor: '#ebffe7',
+    borderColor: '#aaec9c',
+    textColor: '#339e1a',
   },
   {
     id: '2',
     title: 'Аэробная',
     description:
-      'Развитие базовой выносливости и укрепление сердечно-сосудистой системы. Основная зона для эффективного жиросжигания.',
+      'Базовая выносливость и укрепление сердечно-сосудистой системы. Жиросжигание.',
     navigateTo: 'Calculator' as const,
     params: {zoneName: 'Аэробная'},
+    iconName: 'heart' as const,
+    iconSize: 42,
+    backgroundColor: '#ffe7f1',
+    borderColor: '#ec9ccb',
+    textColor: '#9e1a72',
   },
   {
     id: '3',
     title: 'Темповая',
     description:
-      'Повышение анаэробного порога и функциональной выносливости. Позволяет дольше поддерживать высокий темп тренировки.',
+      'Повышение анаэробного порога и функциональной выносливости. Высокий темп.',
     navigateTo: 'Calculator' as const,
     params: {zoneName: 'Темповая'},
+    iconName: 'droplet' as const,
+    iconSize: 42,
+    backgroundColor: '#e7faff',
+    borderColor: '#9cece1',
+    textColor: '#1a9e97',
   },
   {
     id: '4',
     title: 'Анаэробная',
     description:
-      'Развитие скорости, мощности и мышечной выносливости. Тренировка способности работать в условиях кислородного долга.',
+      'Развитие скорости, мощности и мышечной выносливости. Кислородный долг.',
     navigateTo: 'Calculator' as const,
     params: {zoneName: 'Анаэробная'},
+    iconName: 'star' as const,
+    iconSize: 42,
+    backgroundColor: '#fff5e7',
+    borderColor: '#ecc99c',
+    textColor: '#9e691a',
   },
   {
     id: '5',
     title: 'Максимальная',
-    description:
-      'Развитие максимальной скорости и взрывной силы. Для коротких интервалов с предельной мобилизации организма.',
+    description: 'Короткие интервалы максимальной скорости и взрывной силы.',
     navigateTo: 'Calculator' as const,
     params: {zoneName: 'Максимальная'},
+    iconName: 'lightning' as const,
+    iconSize: 42,
+    backgroundColor: '#ffe7e7',
+    borderColor: '#ec9c9c',
+    textColor: '#9e1a1a',
   },
 ];
+
 export function MainScreen() {
   const navigation = useNavigation<MainScreenNavigationProp>();
   const [_searchQuery, _setSearchQuery] = useState('');
@@ -94,7 +118,12 @@ export function MainScreen() {
               title={calc.title}
               description={calc.description}
               navigateTo={calc.navigateTo}
-              params={calc.params} // Передаем параметры
+              iconName={calc.iconName}
+              iconSize={calc.iconSize}
+              params={calc.params}
+              backgroundColor={calc.backgroundColor}
+              borderColor={calc.borderColor}
+              textColor={calc.textColor}
             />
           ))}
         </ScrollView>

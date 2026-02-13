@@ -1,15 +1,16 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Animated,
-  Easing,
+  ViewStyle,
+  TextStyle,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
+import Icon, {IconName} from './Icons';
 
 interface CalculatorCardProps {
   id: string;
@@ -17,6 +18,18 @@ interface CalculatorCardProps {
   description: string;
   params?: Record<string, any>;
   navigateTo: keyof ScreensList;
+  // Иконка для карточки (опционально)
+  iconName?: IconName;
+  iconSize?: number;
+  // Пропсы для кастомных цветов
+  backgroundColor?: string;
+  borderColor?: string;
+  textColor?: string; // Общий цвет для заголовка, иконки и ">>>"
+  // Пропсы для кастомных стилей
+  cardStyle?: ViewStyle;
+  titleStyle?: TextStyle;
+  descriptionStyle?: TextStyle;
+  iconStyle?: ViewStyle;
 }
 
 type CardNavigationProp = StackNavigationProp<ScreensList>;
@@ -27,121 +40,127 @@ export const CalculatorCard: React.FC<CalculatorCardProps> = ({
   description,
   params,
   navigateTo,
+  iconName,
+  iconSize = 40,
+  // Кастомные цвета
+  backgroundColor = '#FFFFFF',
+  borderColor = '#A0C28E',
+  textColor = '#A21812',
+  // Стили по умолчанию
+  cardStyle,
+  titleStyle,
+  descriptionStyle,
+  iconStyle,
 }) => {
   const navigation = useNavigation<CardNavigationProp>();
-  const [expanded, setExpanded] = useState(false);
-  const [animation] = useState(new Animated.Value(0));
 
-  const toggleExpand = () => {
-    const toValue = expanded ? 0 : 1;
-    Animated.timing(animation, {
-      toValue,
-      duration: 200,
-      easing: Easing.ease,
-      useNativeDriver: false,
-    }).start();
-    setExpanded(!expanded);
-  };
-
-  const handleGoToCalculator = () => {
+  const handlePress = () => {
     navigation.navigate(navigateTo, params || {});
   };
 
-  const contentHeight = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 150],
-  });
-
   return (
-    <View style={styles.card}>
-      {/* Заголовок */}
-      <TouchableOpacity
-        style={styles.cardHeader}
-        onPress={toggleExpand}
-        activeOpacity={0.5}>
+    <TouchableOpacity
+      style={[styles.card, {backgroundColor, borderColor}, cardStyle]}
+      onPress={handlePress}
+      activeOpacity={0.7}>
+      {/* Основное содержимое карточки */}
+      <View style={styles.contentContainer}>
+        {/* Левая часть: заголовок и описание */}
         <View style={styles.textContainer}>
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
-        </View>
-      </TouchableOpacity>
+          <View style={styles.header}>
+            <Text
+              style={[styles.title, {color: textColor}, titleStyle]}
+              numberOfLines={1}>
+              {title}
+            </Text>
+          </View>
 
-      {/* Раскрывающийся контент */}
-      <Animated.View style={[styles.expandedContent, {height: contentHeight}]}>
-        <View style={styles.contentWrapper}>
-          {/* Описание калькулятора */}
           <View style={styles.descriptionContainer}>
-            <Text style={styles.descriptionText}>{description}</Text>
-          </View>
-          {/* Кнопка перехода (под описанием, справа) */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.navigateButton}
-              onPress={handleGoToCalculator}
-              activeOpacity={0.7}
-              hitSlop={{top: 10, bottom: 10, left: 20, right: 20}}>
-              <Text style={styles.navigateButtonText}>Перейти →</Text>
-            </TouchableOpacity>
+            <Text style={[styles.descriptionText, descriptionStyle]}>
+              {description}
+            </Text>
           </View>
         </View>
-      </Animated.View>
-    </View>
+
+        {/* Правая часть: иконка (если указана) и стрелка */}
+        <View style={styles.rightSection}>
+          {iconName && (
+            <View style={[styles.iconContainer, iconStyle]}>
+              <Icon
+                name={iconName}
+                size={iconSize}
+                color={textColor}
+                style={styles.icon}
+                onPress={handlePress}
+                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+              />
+            </View>
+          )}
+
+          {/* Текст ">>>" внизу справа */}
+          <View style={styles.arrowContainer}>
+            <Text style={[styles.arrowText, {color: textColor}]}>{'>>>'}</Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
     width: '80%',
-    minHeight: 62,
-    backgroundColor: '#FFFFFF',
+    minHeight: 120,
     borderRadius: 24,
-    padding: 6,
+    padding: 20,
     borderWidth: 2,
-    borderColor: '#A0C28E',
     overflow: 'hidden',
-    marginVertical: 5,
   },
-  cardHeader: {
-    height: 46,
-    justifyContent: 'center',
+  contentContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'stretch',
   },
   textContainer: {
     flex: 1,
-    justifyContent: 'center',
+    marginRight: 12, // Отступ между текстом и правой секцией
+  },
+  header: {
+    marginBottom: 8,
   },
   title: {
-    textAlign: 'center',
     fontFamily: 'sans-serif-medium',
     fontSize: 18,
-    color: '#A21812',
     fontWeight: '400',
-  },
-  contentWrapper: {
-    paddingHorizontal: 20,
   },
   descriptionContainer: {
-    marginBottom: 12, // Отступ перед кнопкой
-    maxHeight: 88,
+    flex: 1,
   },
   descriptionText: {
-    fontFamily: 'sans-serif-light',
-    fontSize: 16,
-    color: '#A21812',
-    lineHeight: 22,
-  },
-  buttonContainer: {
-    alignItems: 'flex-end', // Выравнивание содержимого по правому краю
-  },
-  navigateButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(160, 194, 142, 0.1)',
-  },
-  navigateButtonText: {
-    fontFamily: 'sans-serif-medium',
-    fontSize: 18,
-    color: '#A21812',
     fontWeight: '400',
+    fontSize: 14,
+    color: '#7a7a7a',
+    lineHeight: 18,
+  },
+  rightSection: {
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  iconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  icon: {
+    opacity: 0.3, // Полупрозрачность иконки
+  },
+  arrowContainer: {
+    marginTop: 'auto', // Прижимаем к низу
+  },
+  arrowText: {
+    fontFamily: 'sans-serif-medium',
+    fontSize: 21,
+    fontWeight: '600',
+    opacity: 0.5,
   },
 });
