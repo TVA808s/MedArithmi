@@ -1,5 +1,5 @@
 // SettingsScreen.tsx
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,14 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  ScrollView,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
 import {BottomBar} from '../components/BottomBar';
 import {useSettings} from '../context/SettingsContext';
+import {useProfile} from '../context/ProfileContext';
 import notificationService from '../services/NotificationService';
 import Card from '../components/Card';
 
@@ -24,10 +26,17 @@ type SettingsScreenNavigationProp = StackNavigationProp<
 
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const [isTesting, setIsTesting] = React.useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [localProfile, setLocalProfile] = useState({name: '', age: ''});
 
   const {allowAnalytics, allowMessages, updateSetting, isLoading} =
     useSettings();
+  const {profile, updateProfile, validationErrors} = useProfile();
+
+  // Синхронизация с контекстом при загрузке и обновлении профиля
+  useEffect(() => {
+    setLocalProfile(profile);
+  }, [profile]);
 
   const bottomBarItems = [
     {
@@ -50,6 +59,25 @@ export function SettingsScreen() {
   const handleMessagesToggle = async () => {
     const newValue = !allowMessages;
     await updateSetting('allow_messages', newValue);
+  };
+
+  const handleProfileChange = async (field: 'name' | 'age', value: string) => {
+    // Для поля возраста фильтруем только цифры
+    if (field === 'age') {
+      // Удаляем все символы, кроме цифр
+      const numericValue = value.replace(/[^0-9]/g, '');
+
+      // Ограничиваем длину до 3 символов
+      if (numericValue.length <= 3) {
+        setLocalProfile(prev => ({...prev, [field]: numericValue}));
+        await updateProfile(field, numericValue);
+      }
+    } else {
+      // Для имени разрешаем буквы, пробелы и дефисы
+      const filteredValue = value.replace(/[^a-zA-Zа-яА-Я\s-]/g, '');
+      setLocalProfile(prev => ({...prev, [field]: filteredValue}));
+      await updateProfile(field, filteredValue);
+    }
   };
 
   const handleTestNotification = async () => {
@@ -85,12 +113,33 @@ export function SettingsScreen() {
     }
   };
 
+  // Определяем цвет границы в зависимости от наличия ошибки
+  const getNameBorderColor = () => {
+    return validationErrors.name ? '#FF6B6B' : '#E0E0E0';
+  };
+
+  const getAgeBorderColor = () => {
+    return validationErrors.age ? '#FF6B6B' : '#E0E0E0';
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F0F5EE" />
 
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Настройки</Text>
+
+        {/* Карточка профиля пользователя */}
+        <Card
+          type="profile"
+          profileData={localProfile}
+          onProfileChange={handleProfileChange}
+          validationErrors={validationErrors}
+          nameBorderColor={getNameBorderColor()}
+          ageBorderColor={getAgeBorderColor()}
+        />
 
         {/* Карточка уведомлений */}
         <Card
@@ -127,7 +176,7 @@ export function SettingsScreen() {
           backgroundColor="#c5ffca"
         />
 
-        {/* Кнопка теста уведомления (остается отдельно, так как это не карточка) */}
+        {/* Кнопка теста уведомления */}
         <TouchableOpacity
           style={[styles.testButton, isTesting && styles.testButtonDisabled]}
           onPress={handleTestNotification}
@@ -140,7 +189,7 @@ export function SettingsScreen() {
               : 'Тест уведомления'}
           </Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       <BottomBar items={bottomBarItems} />
     </SafeAreaView>
@@ -152,11 +201,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F0F5EE',
   },
-  content: {
-    flex: 1,
+  scrollContent: {
     paddingTop: 30,
     alignItems: 'center',
     paddingHorizontal: '8%',
+    paddingBottom: 20,
   },
   title: {
     color: '#E75F55',
@@ -166,7 +215,6 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     width: '100%',
   },
-  // Стили для кнопки теста (остаются уникальными)
   testButton: {
     backgroundColor: '#4A90E2',
     padding: 15,

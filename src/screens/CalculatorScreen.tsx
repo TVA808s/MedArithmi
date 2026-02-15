@@ -1,5 +1,5 @@
 // CalculatorScreen.tsx
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   View,
   Text,
@@ -16,10 +16,11 @@ import type {RouteProp} from '@react-navigation/native';
 import {KeyboardAvoidingView, Platform} from 'react-native';
 import {BottomBar} from '../components/BottomBar';
 import {usePulse} from '../context/PulseContext';
+import {useProfile} from '../context/ProfileContext'; // Добавить импорт
 import CalculatorService from '../services/CalculatorService';
 import FirebaseService from '../services/FirebaseService';
-import Card from '../components/Card'; // Импортируем Card (default export)
-import Icon from '../components/Icons'; // Импортируем Icon
+import Card from '../components/Card';
+import Icon from '../components/Icons';
 
 type CalculatorScreenNavigationProp = StackNavigationProp<
   ScreensList,
@@ -27,12 +28,46 @@ type CalculatorScreenNavigationProp = StackNavigationProp<
 >;
 type CalculatorScreenRouteProp = RouteProp<ScreensList, 'Calculator'>;
 
+// Маппинг цветов для зон
+const ZONE_COLORS: Record<string, string> = {
+  Восстановление: '#339e1a',
+  Аэробная: '#9e1a72',
+  Темповая: '#1a9e97',
+  Анаэробная: '#9e691a',
+  Максимальная: '#9e1a1a',
+};
+
+// Маппинг фоновых цветов для зон
+const ZONE_BACKGROUNDS: Record<string, string> = {
+  Восстановление: '#ebffe7',
+  Аэробная: '#ffe7f1',
+  Темповая: '#e7faff',
+  Анаэробная: '#fff5e7',
+  Максимальная: '#ffe7e7',
+};
+
+// Маппинг иконок для зон
+const ZONE_ICONS: Record<
+  string,
+  'plant' | 'heart' | 'droplet' | 'star' | 'lightning'
+> = {
+  Восстановление: 'plant',
+  Аэробная: 'heart',
+  Темповая: 'droplet',
+  Анаэробная: 'star',
+  Максимальная: 'lightning',
+};
+
 export function CalculatorScreen() {
   const navigation = useNavigation<CalculatorScreenNavigationProp>();
   const route = useRoute<CalculatorScreenRouteProp>();
   const {updatePulseData} = usePulse();
+  const {profile} = useProfile(); // Получаем профиль из контекста
 
   const zoneName = (route.params as any)?.zoneName || 'Аэробная';
+  const zoneColor = ZONE_COLORS[zoneName] || '#A21812';
+  const zoneBackground = ZONE_BACKGROUNDS[zoneName] || '#FFFFFF';
+  const zoneIcon = ZONE_ICONS[zoneName] || 'heart';
 
   const bottomBarItems = [
     {
@@ -60,9 +95,22 @@ export function CalculatorScreen() {
     zoneLimits: {min: number; max: number};
   } | null>(null);
 
+  // Флаг для отслеживания, был ли уже установлен возраст из профиля
+  const hasSetAgeFromProfile = useRef(false);
+
   // Для предотвращения бесконечного цикла
   const lastZoneLimitsRef = useRef<string>('');
   const lastRestingHRRef = useRef<string>('');
+
+  // Эффект для установки возраста из профиля при загрузке
+  useEffect(() => {
+    // Если в профиле есть возраст и поле возраста пустое, и мы еще не устанавливали его
+    if (profile.age && !age && !hasSetAgeFromProfile.current) {
+      console.log('Setting age from profile:', profile.age);
+      handleAgeChange(profile.age);
+      hasSetAgeFromProfile.current = true;
+    }
+  }, [profile.age]); // Зависимость от profile.age
 
   // Обработчики ввода
   const handleAgeChange = (text: string) => {
@@ -157,6 +205,7 @@ export function CalculatorScreen() {
     setAgeBorderColor('#C0C0C0');
     setRestingHRBorderColor('#C0C0C0');
     setCalculationResult(null);
+    hasSetAgeFromProfile.current = false; // Сбрасываем флаг при очистке
 
     lastZoneLimitsRef.current = '';
     lastRestingHRRef.current = '';
@@ -182,12 +231,7 @@ export function CalculatorScreen() {
           />
 
           {/* Карточка ввода данных */}
-          <Card
-            type="calculator"
-            title="Введите данные"
-            iconName="calculator"
-            iconColor="#FFA000"
-            iconCircleColor="#FFF3E0">
+          <Card type="calculator" title="Введите данные" iconName="calculator">
             <View style={styles.inputSection}>
               {/* Поле Возраст */}
               <View style={styles.inputFieldContainer}>
@@ -207,6 +251,11 @@ export function CalculatorScreen() {
                 {ageError ? (
                   <Text style={styles.errorText}>{ageError}</Text>
                 ) : null}
+                {profile.age && !age && !ageError && (
+                  <Text style={styles.hintText}>
+                    ℹ️ Возраст из профиля: {profile.age} лет
+                  </Text>
+                )}
               </View>
 
               <View style={styles.inputDivider} />
@@ -321,6 +370,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#F44336',
     marginTop: 4,
+  },
+  hintText: {
+    fontSize: 12,
+    color: '#4A90E2',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   // Пустой блок результата
   emptyResultCard: {

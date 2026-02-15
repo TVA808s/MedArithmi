@@ -12,6 +12,7 @@ import {PulseProvider} from './src/context/PulseContext';
 import {SettingsProvider} from './src/context/SettingsContext';
 import DatabaseService from './src/services/DatabaseService';
 import FirebaseService from './src/services/FirebaseService';
+import {ProfileProvider} from './src/context/ProfileContext';
 
 // Список всех иконок для предзагрузки
 const ICONS_TO_PRELOAD = [
@@ -97,11 +98,13 @@ const App = () => {
 
   return (
     <SettingsProvider>
-      <PulseProvider>
-        <SafeAreaView style={styles.container}>
-          <Navigation />
-        </SafeAreaView>
-      </PulseProvider>
+      <ProfileProvider>
+        <PulseProvider>
+          <SafeAreaView style={styles.container}>
+            <Navigation />
+          </SafeAreaView>
+        </PulseProvider>
+      </ProfileProvider>
     </SettingsProvider>
   );
 };

@@ -1,4 +1,6 @@
+// services/DatabaseService.ts
 import SQLite from 'react-native-sqlite-storage';
+import {Platform} from 'react-native';
 
 const databaseName = 'PulseSportDB.db';
 
@@ -6,6 +8,12 @@ export const SETTINGS_KEYS = {
   ALLOW_ANALYTICS: 'allow_analytics',
   ALLOW_MESSAGES: 'allow_messages',
 } as const;
+
+// Интерфейс для профиля пользователя
+export interface UserProfile {
+  name: string;
+  age: string;
+}
 
 SQLite.enablePromise(true);
 
@@ -17,7 +25,7 @@ class DatabaseService {
       console.log('Opening database...');
       this.db = await SQLite.openDatabase({
         name: databaseName,
-        location: 'default',
+        location: Platform.OS === 'ios' ? 'Library' : 'default',
       });
       console.log('Database opened');
 
@@ -53,7 +61,7 @@ class DatabaseService {
     ];
 
     for (const query of queries) {
-      await this.executeQuery(query, []);
+      await this.executeAction(query, []);
     }
   }
 
@@ -71,6 +79,17 @@ class DatabaseService {
       );
       if (existingMessages === null) {
         await this.saveSetting(SETTINGS_KEYS.ALLOW_MESSAGES, 'true');
+      }
+
+      // Инициализируем профиль, если его нет
+      const existingName = await this.getSetting('user_name');
+      if (existingName === null) {
+        await this.saveSetting('user_name', '');
+      }
+
+      const existingAge = await this.getSetting('user_age');
+      if (existingAge === null) {
+        await this.saveSetting('user_age', '');
       }
     } catch (error) {
       console.error('Error initializing default settings:', error);
@@ -103,7 +122,6 @@ class DatabaseService {
     });
   }
 
-  // Новый метод для выполнения запросов без возврата данных (INSERT, UPDATE, DELETE)
   private async executeAction(sql: string, params: any[]): Promise<boolean> {
     if (!this.db) {
       throw new Error('Database not initialized');
@@ -115,7 +133,6 @@ class DatabaseService {
           sql,
           params,
           (_, results) => {
-            // Для DELETE запросов проверяем, были ли затронуты строки
             resolve(results.rowsAffected > 0);
           },
           (_, error) => {
@@ -127,6 +144,7 @@ class DatabaseService {
     });
   }
 
+  // Методы для настроек
   async saveSetting(key: string, value: string): Promise<void> {
     const query = `
       INSERT OR REPLACE INTO user_settings (key, value) 
@@ -147,6 +165,48 @@ class DatabaseService {
     return value === 'true';
   }
 
+  async saveUserProfile(profile: UserProfile): Promise<void> {
+    try {
+      console.log('Saving user profile:', profile);
+      await this.saveSetting('user_name', profile.name || '');
+      await this.saveSetting('user_age', profile.age || '');
+      // await this.saveSetting('user_frequency', profile.frequency || ''); // удалено
+      console.log('Profile saved successfully');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      throw error;
+    }
+  }
+
+  // Обновить метод getUserProfile
+  async getUserProfile(): Promise<UserProfile> {
+    try {
+      console.log('Loading user profile...');
+      const [name, age] = await Promise.all([
+        this.getSetting('user_name'),
+        this.getSetting('user_age'),
+        // this.getSetting('user_frequency'), // удалено
+      ]);
+
+      const profile = {
+        name: name || '',
+        age: age || '',
+        // frequency: frequency || '', // удалено
+      };
+
+      console.log('Profile loaded:', profile);
+      return profile;
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      return {name: '', age: ''};
+    }
+  }
+
+  async getUserAge(): Promise<string> {
+    return (await this.getSetting('user_age')) || '';
+  }
+
+  // Методы для расчетов
   async saveCalculation(data: {
     zoneName: string;
     age: number;
@@ -168,8 +228,13 @@ class DatabaseService {
       data.zoneMax,
     ];
 
-    const result = await this.executeQuery<{insertId: number}>(query, params);
-    return result[0]?.insertId || -1;
+    await this.executeAction(query, params);
+    // Возвращаем ID последней вставленной записи
+    const result = await this.executeQuery<{last_insert_rowid: number}>(
+      'SELECT last_insert_rowid() as last_insert_rowid',
+      [],
+    );
+    return result[0]?.last_insert_rowid || -1;
   }
 
   async getCalculationHistory(limit: number = 20): Promise<any[]> {
@@ -223,9 +288,8 @@ class DatabaseService {
   async deleteCalculation(id: number): Promise<boolean> {
     try {
       const query = 'DELETE FROM calculations WHERE id = ?';
-      // Используем новый метод executeAction для DELETE запросов
       const result = await this.executeAction(query, [id]);
-      console.log('Delete result:', result); // Для отладки
+      console.log('Delete result:', result);
       return result;
     } catch (error) {
       console.error('Error deleting calculation:', error);

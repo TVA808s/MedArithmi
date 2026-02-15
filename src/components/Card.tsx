@@ -8,6 +8,7 @@ import {
   ViewStyle,
   TextStyle,
   Switch,
+  TextInput,
 } from 'react-native';
 import Icon, {IconName} from './Icons';
 
@@ -19,7 +20,8 @@ export type CardType =
   | 'history'
   | 'setting'
   | 'settingInfo'
-  | 'stats';
+  | 'stats'
+  | 'profile';
 
 export type ZoneName =
   | 'Восстановление'
@@ -91,6 +93,17 @@ export interface CardProps {
   titleStyle?: TextStyle;
   descriptionStyle?: TextStyle;
   valueStyle?: TextStyle;
+  profileData?: {
+    name: string;
+    age: string;
+  };
+  onProfileChange?: (field: 'name' | 'age', value: string) => void;
+  validationErrors?: {
+    name: string;
+    age: string;
+  };
+  nameBorderColor?: string;
+  ageBorderColor?: string;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -125,6 +138,11 @@ export const Card: React.FC<CardProps> = ({
   titleStyle,
   descriptionStyle,
   valueStyle,
+  profileData,
+  onProfileChange,
+  validationErrors,
+  nameBorderColor,
+  ageBorderColor,
 }) => {
   const getZoneColors = () => {
     if (zoneName && ZONE_COLORS[zoneName]) {
@@ -416,7 +434,80 @@ export const Card: React.FC<CardProps> = ({
       )}
     </>
   );
+  const renderProfileCard = () => {
+    const profile = profileData || {name: '', age: ''};
+    const handleChange = onProfileChange;
+    const errors = validationErrors || {name: '', age: ''};
 
+    return (
+      <>
+        <View style={styles.cardHeader}>
+          <View style={[styles.iconCircle, {backgroundColor: '#E3F2FD'}]}>
+            <Icon name="person" size={24} color="#2196F3" />
+          </View>
+          <View style={styles.profileHeaderText}>
+            <Text style={styles.profileCardTitle}>Профиль</Text>
+            <Text style={styles.profileCardDescription}>
+              Ваши персональные данные
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.profileContent}>
+          <View style={styles.inputFieldContainer}>
+            <Text style={styles.inputFieldLabel}>Имя</Text>
+            <View style={styles.inputFieldRow}>
+              <TextInput
+                style={[
+                  styles.inputField,
+                  {borderColor: nameBorderColor || '#E0E0E0'},
+                ]}
+                value={profile.name}
+                onChangeText={value => handleChange?.('name', value)}
+                placeholder="Введите ваше имя"
+                placeholderTextColor="#C0C0C0"
+                keyboardType="default"
+                returnKeyType="done"
+                autoCapitalize="words"
+                autoCorrect={false}
+                spellCheck={false}
+                textContentType="name"
+                autoComplete="name"
+                allowFontScaling={true}
+              />
+            </View>
+            {errors.name ? (
+              <Text style={styles.errorText}>{errors.name}</Text>
+            ) : null}
+          </View>
+
+          <View style={styles.inputDivider} />
+
+          <View style={styles.inputFieldContainer}>
+            <Text style={styles.inputFieldLabel}>Возраст</Text>
+            <View style={styles.inputFieldRow}>
+              <TextInput
+                style={[
+                  styles.inputField,
+                  {borderColor: ageBorderColor || '#E0E0E0'},
+                ]}
+                value={profile.age}
+                onChangeText={value => handleChange?.('age', value)}
+                placeholder="Введите ваш возраст"
+                placeholderTextColor="#C0C0C0"
+                keyboardType="numeric"
+                maxLength={3}
+                returnKeyType="done"
+              />
+            </View>
+            {errors.age ? (
+              <Text style={styles.errorText}>{errors.age}</Text>
+            ) : null}
+          </View>
+        </View>
+      </>
+    );
+  };
   const renderContent = () => {
     if (children && type !== 'calculator' && type !== 'main') {
       return children;
@@ -439,6 +530,8 @@ export const Card: React.FC<CardProps> = ({
         return renderSettingInfoCard();
       case 'stats':
         return renderStatsCard();
+      case 'profile':
+        return renderProfileCard();
       default:
         return null;
     }
@@ -507,6 +600,15 @@ export const Card: React.FC<CardProps> = ({
         return {
           ...baseStyle,
           ...styles.statsCard,
+        };
+      case 'profile':
+        return {
+          ...baseStyle,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 24,
+          padding: 16,
+          width: '100%',
+          elevation: 3,
         };
       default:
         return baseStyle;
@@ -834,6 +936,58 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     color: '#718096',
+  },
+  profileHeaderText: {
+    flex: 1,
+  },
+  profileCardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  profileCardDescription: {
+    fontSize: 14, // Изменил на 14, так как 16 было слишком крупно для описания
+    color: '#718096',
+    lineHeight: 18,
+  },
+  profileContent: {
+    marginTop: 8,
+    width: '100%',
+  },
+  inputFieldContainer: {
+    marginBottom: 8,
+    width: '100%',
+  },
+  inputFieldLabel: {
+    fontSize: 16,
+    color: '#000000',
+    marginBottom: 8,
+  },
+  inputFieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  inputField: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 12,
+    color: '#718096',
+    fontWeight: '600',
+    fontSize: 16,
+    height: 48,
+  },
+  inputDivider: {
+    height: 1,
+    backgroundColor: '#71809638',
+    marginVertical: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#FF6B6B',
   },
 });
 
