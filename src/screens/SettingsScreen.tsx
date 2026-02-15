@@ -7,18 +7,90 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  Switch,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
 import {BottomBar} from '../components/BottomBar';
 import {useSettings} from '../context/SettingsContext';
-import notificationService from '../services/NotificationService'; // Импортируем сервис уведомлений
+import notificationService from '../services/NotificationService';
+import Icon, {IconName} from '../components/Icons';
 
 type SettingsScreenNavigationProp = StackNavigationProp<
   ScreensList,
   'Settings'
 >;
+
+interface SettingCardProps {
+  iconName: IconName;
+  iconColor: string;
+  circleBackgroundColor: string;
+  title: string;
+  description: string;
+  value: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+}
+
+interface InfoCardProps {
+  iconName: IconName;
+  iconColor: string;
+  cardBackgroundColor: string;
+  circleBackgroundColor: string;
+  title: string;
+  description: string;
+}
+
+const SettingCard: React.FC<SettingCardProps> = ({
+  iconName,
+  iconColor,
+  circleBackgroundColor,
+  title,
+  description,
+  value,
+  onToggle,
+  disabled,
+}) => (
+  <View style={styles.card}>
+    <View style={styles.cardHeader}>
+      <View style={[styles.iconCircle, {backgroundColor: circleBackgroundColor}]}>
+        <Icon name={iconName} size={24} color={iconColor} />
+      </View>
+      <View style={styles.titleContainer}>
+        <Text style={styles.cardTitle}>{title}</Text>
+        <Switch
+          trackColor={{false: '#E0E0E0', true: iconColor}}
+          thumbColor={'#FFFFFF'}
+          ios_backgroundColor="#E0E0E0"
+          onValueChange={onToggle}
+          value={value}
+          disabled={disabled}
+        />
+      </View>
+    </View>
+    <Text style={styles.cardDescription}>{description}</Text>
+  </View>
+);
+
+const InfoCard: React.FC<InfoCardProps> = ({
+  iconName,
+  iconColor,
+  cardBackgroundColor,
+  circleBackgroundColor,
+  title,
+  description,
+}) => (
+  <View style={[styles.card, {backgroundColor: cardBackgroundColor}]}>
+    <View style={styles.cardHeader}>
+      <View style={[styles.iconCircle, {backgroundColor: circleBackgroundColor}]}>
+        <Icon name={iconName} size={24} color={iconColor} />
+      </View>
+      <Text style={styles.cardTitle}>{title}</Text>
+    </View>
+    <Text style={styles.cardDescription}>{description}</Text>
+  </View>
+);
 
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
@@ -50,7 +122,6 @@ export function SettingsScreen() {
     await updateSetting('allow_messages', newValue);
   };
 
-  // Функция для отправки тестового уведомления
   const handleTestNotification = async () => {
     if (isTesting) {
       return;
@@ -59,7 +130,6 @@ export function SettingsScreen() {
     setIsTesting(true);
 
     try {
-      // Отправляем случайное уведомление
       const notificationId = await notificationService.sendRandomNotification();
 
       if (notificationId !== null) {
@@ -92,48 +162,36 @@ export function SettingsScreen() {
       <View style={styles.content}>
         <Text style={styles.title}>Настройки</Text>
 
-        <View style={styles.sectionFirst}>
-          <TouchableOpacity
-            style={styles.checkboxContainer}
-            onPress={handleMessagesToggle}
-            disabled={isLoading}>
-            <View style={styles.checkboxOuter}>
-              {allowMessages && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <Text style={styles.checkboxLabel}>
-              Присылать ежедневные уведомления
-            </Text>
-          </TouchableOpacity>
-          <Text style={styles.settingDescription}>
-            Ежедневные напоминания о тренировках в 9:00 утра
-          </Text>
-        </View>
+        <SettingCard
+          iconName="notification"
+          iconColor="#FFA000"
+          circleBackgroundColor="#FFF3E0"
+          title="Ежедневные уведомления"
+          description="Ежедневные напоминания о тренировках в 9:00 утра"
+          value={allowMessages}
+          onToggle={handleMessagesToggle}
+          disabled={isLoading}
+        />
 
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.checkboxContainer}
-            onPress={handleAnalyticsToggle}
-            disabled={isLoading}>
-            <View style={styles.checkboxOuter}>
-              {allowAnalytics && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <Text style={styles.checkboxLabel}>
-              Разрешить анонимную аналитику использования
-            </Text>
-          </TouchableOpacity>
-          <Text style={styles.settingDescription}>
-            Помогает улучшать приложение
-          </Text>
-        </View>
+        <SettingCard
+          iconName="guard"
+          iconColor="#2196F3"
+          circleBackgroundColor="#E3F2FD"
+          title="Анонимная аналитика"
+          description="Помогает улучшать приложение"
+          value={allowAnalytics}
+          onToggle={handleAnalyticsToggle}
+          disabled={isLoading}
+        />
 
-        <View style={styles.section}>
-          <Text style={styles.privacyTitle}>Мы ценим вашу приватность.</Text>
-          <Text style={styles.privacyText}>
-            • Медицинские расчеты: Все вводимые вами данные (вес, рост,
-            лабораторные показатели) обрабатываются локально на вашем устройстве
-            и не отправляются на наши сервера для хранения.
-          </Text>
-        </View>
+        <InfoCard
+          iconName="info"
+          iconColor="#4CAF50"
+          cardBackgroundColor="#c5ffca"
+          circleBackgroundColor="#FFFFFF"
+          title="Мы ценим вашу приватность"
+          description="Все вводимые вами данные (возраст, ЧСС покоя) обрабатываются локально на вашем устройстве и не отправляются на наши сервера для хранения."
+        />
 
         <TouchableOpacity
           style={[styles.testButton, isTesting && styles.testButtonDisabled]}
@@ -153,6 +211,7 @@ export function SettingsScreen() {
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -161,85 +220,69 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingTop: 30,
-    alignItems: 'center', // Центрируем содержимое
-    paddingHorizontal: '8%', // Такой же отступ как у title на MainScreen
+    alignItems: 'center',
+    paddingHorizontal: '8%',
   },
   title: {
     color: '#E75F55',
     fontSize: 24,
     textAlign: 'center',
     marginBottom: 30,
-    lineHeight: 36, // Как у title на MainScreen
-    width: '100%', // На всю ширину
+    lineHeight: 36,
+    width: '100%',
   },
-  section: {
-    marginBottom: 10,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#fdbcbd',
-    width: '100%', // На всю ширину
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 20,
+    width: '100%',
+    elevation: 3,
   },
-  sectionFirst: {
-    marginBottom: 10,
-    width: '100%', // На всю ширину
-  },
-  checkboxContainer: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    width: '100%', // На всю ширину
   },
-  checkboxOuter: {
-    width: 22,
-    height: 22,
-    borderWidth: 2,
-    borderColor: '#79A162',
-    borderRadius: 4,
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 12,
   },
-  checkmark: {
-    color: '#79A162',
+  titleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-  },
-  checkboxLabel: {
-    fontSize: 21,
-    color: '#A0C28E',
+    fontWeight: '600',
+    color: '#000',
     flex: 1,
   },
-  settingDescription: {
+  cardDescription: {
     fontSize: 14,
-    color: '#7A7A7A',
-    marginLeft: 32, // Отступ под чекбокс
-    marginBottom: 10,
-  },
-  privacyTitle: {
-    fontSize: 21,
-    color: '#A0C28E',
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  privacyText: {
-    textAlign: 'left',
-    fontSize: 16,
-    color: '#A0C28E',
-    lineHeight: 20,
-    marginBottom: 10,
+    color: '#718096',
+    lineHeight: 18,
+    marginLeft: 52,
   },
   testButton: {
     backgroundColor: '#4A90E2',
     padding: 15,
-    borderRadius: 10,
-    marginTop: 30,
+    borderRadius: 8,
+    marginTop: 16,
     alignItems: 'center',
-    width: '100%', // На всю ширину
-    shadowColor: '#000', // Тень как у карточек
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    elevation: 3,
+    shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
   },
   testButtonDisabled: {
     backgroundColor: '#A0C0E0',

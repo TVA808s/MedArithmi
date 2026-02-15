@@ -132,7 +132,9 @@ export function HistoryScreen() {
     try {
       setLoading(true);
 
-      const data: HistoryItem[] = await DatabaseService.getCalculationHistory(20);
+      const data: HistoryItem[] = await DatabaseService.getCalculationHistory(
+        20,
+      );
 
       await FirebaseService.logEvent('history_viewed', {
         item_count: data.length,
@@ -194,7 +196,9 @@ export function HistoryScreen() {
                   return newHistory;
                 });
 
-                const updatedData = await DatabaseService.getCalculationHistory(20);
+                const updatedData = await DatabaseService.getCalculationHistory(
+                  20,
+                );
                 if (updatedData.length > 0) {
                   const stats = calculateRestingHRStats(updatedData);
                   setAverageRestingHR(stats.avg);
@@ -257,14 +261,16 @@ export function HistoryScreen() {
           {!isEmpty && averageRestingHR !== null && (
             <View style={styles.statsContainer}>
               <Text style={styles.infoText}>
-                Показаны последние {Object.values(history).flat().length} расчетов
+                Показаны последние {Object.values(history).flat().length}{' '}
+                расчетов
               </Text>
 
               <View style={styles.statsDivider} />
 
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
-                  <View style={[styles.iconCircle, {backgroundColor: '#55e7813b'}]}>
+                  <View
+                    style={[styles.iconCircle, {backgroundColor: '#55e7813b'}]}>
                     <Icon name="heart" size={28} color="#55e781" />
                   </View>
                   <Text style={styles.statValue}>{minRestingHR}</Text>
@@ -272,7 +278,8 @@ export function HistoryScreen() {
                 </View>
 
                 <View style={styles.statItem}>
-                  <View style={[styles.iconCircle, {backgroundColor: '#dde75538'}]}>
+                  <View
+                    style={[styles.iconCircle, {backgroundColor: '#dde75538'}]}>
                     <Icon name="heart" size={28} color="#dde755" />
                   </View>
                   <Text style={styles.statValue}>{averageRestingHR}</Text>
@@ -280,7 +287,8 @@ export function HistoryScreen() {
                 </View>
 
                 <View style={styles.statItem}>
-                  <View style={[styles.iconCircle, {backgroundColor: '#e75f552d'}]}>
+                  <View
+                    style={[styles.iconCircle, {backgroundColor: '#e75f552d'}]}>
                     <Icon name="heart" size={28} color="#E75F55" />
                   </View>
                   <Text style={styles.statValue}>{maxRestingHR}</Text>
@@ -351,7 +359,9 @@ export function HistoryScreen() {
                             name="trash"
                             size={24}
                             color="#71809677"
-                            onPress={() => handleDelete(item.id, item.zone_name)}
+                            onPress={() =>
+                              handleDelete(item.id, item.zone_name)
+                            }
                             hitSlop={{top: 15, bottom: 15, left: 15, right: 15}}
                           />
                         </View>
@@ -360,12 +370,10 @@ export function HistoryScreen() {
                       <View style={styles.calculationsBlock}>
                         <View style={styles.calculationRow}>
                           <View style={styles.calculationLabelContainer}>
-                            <Icon
-                              name="pulse"
-                              size={18}
-                              color="#718096"
-                            />
-                            <Text style={styles.calculationLabel}>Результат:</Text>
+                            <Icon name="pulse" size={18} color="#718096" />
+                            <Text style={styles.calculationLabel}>
+                              Результат:
+                            </Text>
                           </View>
                           <Text
                             style={[
@@ -380,12 +388,10 @@ export function HistoryScreen() {
 
                         <View style={styles.calculationRow}>
                           <View style={styles.calculationLabelContainer}>
-                            <Icon
-                              name="heart2"
-                              size={18}
-                              color="#718096"
-                            />
-                            <Text style={styles.calculationLabel}>ЧСС покоя:</Text>
+                            <Icon name="heart2" size={18} color="#718096" />
+                            <Text style={styles.calculationLabel}>
+                              ЧСС покоя:
+                            </Text>
                           </View>
                           <Text style={styles.calculationValueGray}>
                             {item.resting_hr} уд/мин
@@ -396,12 +402,10 @@ export function HistoryScreen() {
 
                         <View style={styles.calculationRow}>
                           <View style={styles.calculationLabelContainer}>
-                            <Icon
-                              name="person"
-                              size={18}
-                              color="#718096"
-                            />
-                            <Text style={styles.calculationLabel}>Возраст:</Text>
+                            <Icon name="person" size={18} color="#718096" />
+                            <Text style={styles.calculationLabel}>
+                              Возраст:
+                            </Text>
                           </View>
                           <Text style={styles.calculationValueGray}>
                             {item.age} лет

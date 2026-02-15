@@ -17,6 +17,7 @@ import {BottomBar} from '../components/BottomBar';
 import {usePulse} from '../context/PulseContext';
 import CalculatorService from '../services/CalculatorService';
 import FirebaseService from '../services/FirebaseService';
+import Icon, {IconName} from '../components/Icons';
 
 type CalculatorScreenNavigationProp = StackNavigationProp<
   ScreensList,
@@ -24,12 +25,32 @@ type CalculatorScreenNavigationProp = StackNavigationProp<
 >;
 type CalculatorScreenRouteProp = RouteProp<ScreensList, 'Calculator'>;
 
+// Маппинг цветов для зон
+const ZONE_COLORS: Record<string, string> = {
+  Восстановление: '#339e1a',
+  Аэробная: '#9e1a72',
+  Темповая: '#1a9e97',
+  Анаэробная: '#9e691a',
+  Максимальная: '#9e1a1a',
+};
+
+// Маппинг фоновых цветов для зон
+const ZONE_BACKGROUNDS: Record<string, string> = {
+  Восстановление: '#ebffe7',
+  Аэробная: '#ffe7f1',
+  Темповая: '#e7faff',
+  Анаэробная: '#fff5e7',
+  Максимальная: '#ffe7e7',
+};
+
 export function CalculatorScreen() {
   const navigation = useNavigation<CalculatorScreenNavigationProp>();
   const route = useRoute<CalculatorScreenRouteProp>();
   const {updatePulseData} = usePulse();
 
   const zoneName = (route.params as any)?.zoneName || 'Аэробная';
+  const zoneColor = ZONE_COLORS[zoneName] || '#A21812';
+  const zoneBackground = ZONE_BACKGROUNDS[zoneName] || '#FFFFFF';
 
   const bottomBarItems = [
     {
@@ -123,7 +144,6 @@ export function CalculatorScreen() {
             zoneMax: calculationResult.zoneLimits.max,
           });
 
-          // Логируем успешный расчет
           await FirebaseService.logEvent('calculation_completed', {
             zone: zoneName,
             age: parseInt(age, 10),
@@ -134,7 +154,6 @@ export function CalculatorScreen() {
         } catch (error) {
           console.error('Ошибка сохранения:', error);
 
-          // Логируем ошибку расчета
           await FirebaseService.logEvent('calculation_error', {
             zone: zoneName,
             error_message:
@@ -172,99 +191,103 @@ export function CalculatorScreen() {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-          <View style={styles.HeadingContainer}>
-            <Text style={styles.Heading}>{zoneName}</Text>
-            <Text style={styles.HeadingHint}>
-              {
-                'Как измерить "ЧСС покоя"?\nИзмерьте утром после пробуждения или после 15-ти минутного отдыха в положении сидя или лежа свой пульс в течении одной минуты.'
-              }
+
+          {/* Карточка с подсказкой */}
+          <View style={styles.hintCard}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconCircle, {backgroundColor: '#ffffff'}]}>
+                <Icon name="info" size={22} color="#005db9" />
+              </View>
+              <Text style={styles.hintCardTitle}>Как измерить ЧСС покоя?</Text>
+            </View>
+            <Text style={styles.hintCardDescription}>
+              Измерьте пульс в течение минуты утром после пробуждения или после 15 мин отдыха сидя/лежа.
             </Text>
           </View>
 
-          <View style={styles.InputContainer}>
-            {/* Поле ввода возраста */}
-            <View style={styles.InputRow}>
-              <Text style={styles.InputText}>Возраст:</Text>
-              <TextInput
-                style={[styles.input, {borderColor: ageBorderColor}]}
-                value={age}
-                onChangeText={handleAgeChange}
-                placeholder="от 12 до 90"
-                placeholderTextColor="#C0C0C0"
-                keyboardType="numeric"
-                maxLength={2}
-              />
-              <Text style={styles.InputTextUnits}>лет</Text>
+          {/* Карточка ввода данных */}
+          <View style={styles.inputCard}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconCircle, {backgroundColor: '#FFF3E0'}]}>
+                <Icon name="calculator" size={24} color="#FFA000" />
+              </View>
+              <Text style={styles.cardTitle}>Введите данные</Text>
             </View>
-            {ageError ? <Text style={styles.errorText}>{ageError}</Text> : null}
 
-            <View style={styles.InputLine} />
+            <View style={styles.inputSection}>
+              {/* Поле Возраст */}
+              <View style={styles.inputFieldContainer}>
+                <Text style={styles.inputFieldLabel}>Возраст</Text>
+                <View style={styles.inputFieldRow}>
+                  <TextInput
+                    style={[styles.inputField, {borderColor: ageBorderColor}]}
+                    value={age}
+                    onChangeText={handleAgeChange}
+                    placeholder="от 12 до 90"
+                    placeholderTextColor="#C0C0C0"
+                    keyboardType="numeric"
+                    maxLength={2}
+                  />
+                  <Text style={styles.inputFieldUnit}>лет</Text>
+                </View>
+                {ageError ? <Text style={styles.errorText}>{ageError}</Text> : null}
+              </View>
 
-            {/* Поле ввода пульса в покое */}
-            <View style={styles.InputRow}>
-              <Text style={styles.InputText}>ЧСС покоя:</Text>
-              <TextInput
-                style={[styles.input, {borderColor: restingHRBorderColor}]}
-                value={restingHR}
-                onChangeText={handleRestingHRChange}
-                placeholder="от 40 до 100"
-                placeholderTextColor="#C0C0C0"
-                keyboardType="numeric"
-                maxLength={3}
-              />
-              <Text style={styles.InputTextUnits}>уд/мин</Text>
+              <View style={styles.inputDivider} />
+
+              {/* Поле ЧСС покоя */}
+              <View style={styles.inputFieldContainer}>
+                <Text style={styles.inputFieldLabel}>ЧСС покоя</Text>
+                <View style={styles.inputFieldRow}>
+                  <TextInput
+                    style={[styles.inputField, {borderColor: restingHRBorderColor}]}
+                    value={restingHR}
+                    onChangeText={handleRestingHRChange}
+                    placeholder="от 40 до 100"
+                    placeholderTextColor="#C0C0C0"
+                    keyboardType="numeric"
+                    maxLength={3}
+                  />
+                  <Text style={styles.inputFieldUnit}>уд/мин</Text>
+                </View>
+                {restingHRError ? <Text style={styles.errorText}>{restingHRError}</Text> : null}
+              </View>
             </View>
-            {restingHRError ? (
-              <Text style={styles.errorText}>{restingHRError}</Text>
-            ) : null}
           </View>
 
-          {/* Блок с результатом */}
-          {calculationResult && (
-            <View style={styles.resultContainer}>
-              <View style={styles.resultHeader}>
-                <Text style={styles.resultTitle}>Ваша пульсовая зона</Text>
-              </View>
-
-              <View>
-                {/* Границы зоны */}
-                <View style={styles.zoneContainer}>
-                  <View style={styles.zoneValueContainer}>
-                    <Text style={styles.zoneValue}>
-                      {calculationResult.zoneLimits.min} -{' '}
-                      {calculationResult.zoneLimits.max}
-                    </Text>
-                    <Text style={styles.zoneUnit}>уд/мин</Text>
-                  </View>
+          {/* Блок результата */}
+          {calculationResult ? (
+            <View style={[styles.resultCard, {backgroundColor: zoneBackground, borderColor: zoneColor}]}>
+              <View style={styles.resultContent}>
+                <View style={[styles.resultIconCircle, {backgroundColor: zoneColor}]}>
+                  <Icon name="heart" size={32} color="#FFFFFF" />
                 </View>
-
-                {/* Интерпретация ощущений */}
-                <View>
-                  <Text style={styles.interpretationTitle}>
-                    Ощущения в этой зоне:
-                  </Text>
-                  <View style={styles.interpretationTextContainer}>
-                    <Text style={styles.interpretationText}>
-                      {CalculatorService.getZoneInterpretation(zoneName)}
-                    </Text>
-                  </View>
-                </View>
+                <Text style={[styles.resultZoneName, {color: zoneColor}]}>
+                  {zoneName}
+                </Text>
+                <Text style={[styles.resultValue, {color: zoneColor}]}>
+                  {calculationResult.zoneLimits.min} - {calculationResult.zoneLimits.max}
+                </Text>
+                <Text style={[styles.resultUnit, {color: zoneColor}]}>
+                  уд/мин
+                </Text>
+                <View style={[styles.resultDivider, {backgroundColor: zoneColor + '40'}]} />
+                <Text style={[styles.resultDescription, {color: zoneColor}]}>
+                  {CalculatorService.getZoneInterpretation(zoneName)}
+                </Text>
               </View>
             </View>
-          )}
-
-          {/* Подсказка если нет результата */}
-          {!calculationResult &&
-            !ageError &&
-            !restingHRError &&
-            age === '' &&
-            restingHR === '' && (
-              <View style={styles.initialHintContainer}>
-                <Text style={styles.initialHintText}>
+          ) : (
+            /* Пустой блок результата */
+            <View style={styles.emptyResultCard}>
+              <View style={styles.emptyResultContent}>
+                <Icon name="heart" size={48} color="#718096" />
+                <Text style={styles.emptyResultText}>
                   Введите ваш возраст и ЧСС покоя для расчета пульсовой зоны
                 </Text>
               </View>
-            )}
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -272,6 +295,7 @@ export function CalculatorScreen() {
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -283,145 +307,164 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingTop: 30,
-    alignItems: 'center', // Центрируем содержимое
-    paddingHorizontal: '8%', // Такой же отступ как у title на MainScreen
-  },
-  HeadingContainer: {
-    marginBottom: 30,
     alignItems: 'center',
-    gap: 10,
-    width: '100%', // На всю ширину
+    paddingHorizontal: '8%',
+    paddingBottom: 20,
   },
-  Heading: {
-    fontSize: 24,
-    color: '#E75F55',
-    textAlign: 'center',
-    lineHeight: 36, // Как у title на MainScreen
-  },
-  HeadingHint: {
-    color: '#E75F55',
-    fontSize: 18,
-    textAlign: 'center',
-  },
-  InputContainer: {
-    alignSelf: 'center',
-    width: '100%', // На всю ширину
-  },
-  InputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 15,
-    width: '100%', // На всю ширину
-  },
-  InputText: {
-    fontSize: 21,
-    color: '#A21812',
-  },
-  InputTextUnits: {
-    fontSize: 21,
-    color: '#7a7a7a',
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#C0C0C0',
-    borderWidth: 2,
-    borderRadius: 8,
-    padding: 8,
-    color: '#7a7a7a',
-    fontWeight: '600',
-    fontSize: 18,
-    height: 45,
-    width: 125,
-    textAlign: 'center',
-  },
-  InputLine: {
-    height: 1,
-    backgroundColor: '#C0C0C0',
-    marginVertical: 15,
-    width: '100%', // На всю ширину
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#F44336',
-    textAlign: 'center',
-    marginTop: 2,
-    height: 20,
-    width: '100%', // На всю ширину
-  },
-  resultContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15, // Как у карточек на HistoryScreen
-    marginVertical: 20,
-    padding: 15,
-    width: '100%', // На всю ширину
-    shadowColor: '#000', // Тень как у карточек
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  // Карточка подсказки
+  hintCard: {
+    backgroundColor: '#e8f5ff',
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 16,
+    width: '100%',
     elevation: 3,
   },
-  resultHeader: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    paddingBottom: 10,
-  },
-  resultTitle: {
-    fontSize: 21,
-    color: '#7A7A7A',
-    textAlign: 'center',
-  },
-  zoneContainer: {
-    alignItems: 'center',
-    marginVertical: 5,
-  },
-  zoneValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'center',
-  },
-  zoneValue: {
-    fontSize: 32,
-    color: '#A21812',
+  hintCardTitle: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#005db9',
   },
-  zoneUnit: {
-    fontSize: 18,
-    color: '#7A7A7A',
+  hintCardDescription: {
+    fontSize: 14,
+    color: '#3c9dff',
+    lineHeight: 16,
+    marginLeft: 52,
   },
-  interpretationTitle: {
-    fontSize: 18,
-    color: '#7A7A7A',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  interpretationTextContainer: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 16,
+  // Карточка ввода
+  inputCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    marginBottom: 16,
+    width: '100%',
+    elevation: 3,
   },
-  interpretationText: {
-    fontSize: 18,
-    color: '#7A7A7A',
-    lineHeight: 26,
-    textAlign: 'center',
-  },
-  initialHintContainer: {
+  cardHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 40,
-    padding: 30,
-    backgroundColor: '#F0F5EE',
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#A0C28E',
-    width: '100%', // На всю ширину
   },
-  initialHintText: {
-    fontSize: 20,
-    color: '#7A7A7A',
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: '#718096',
+    lineHeight: 18,
+    marginLeft: 52,
+  },
+  inputSection: {
+    marginTop: 8,
+  },
+  inputFieldLabel: {
+    fontSize: 16,
+    color: '#718096',
+    marginBottom: 8,
+  },
+  inputFieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  inputField: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 12,
+    color: '#718096',
+    fontWeight: '600',
+    fontSize: 16,
+    height: 48,
+  },
+  inputFieldUnit: {
+    fontSize: 16,
+    color: '#718096',
+    width: 60,
+  },
+  inputDivider: {
+    height: 1,
+    backgroundColor: '#71809638',
+    marginVertical: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#F44336',
+    marginTop: 4,
+  },
+  // Пустой блок результата
+  emptyResultCard: {
+    width: '100%',
+  },
+  emptyResultContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#718096',
+    borderRadius: 24,
+    backgroundColor: 'transparent',
+  },
+  emptyResultText: {
+    fontSize: 16,
+    color: '#718096',
     textAlign: 'center',
-    lineHeight: 28,
+    marginTop: 16,
+    lineHeight: 22,
+  },
+  // Блок с результатом
+  resultCard: {
+    width: '100%',
+    borderRadius: 24,
+    borderWidth: 2,
+    overflow: 'hidden',
+  },
+  resultContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  resultIconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  resultZoneName: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  resultValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  resultUnit: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  resultDivider: {
+    height: 1,
+    width: '80%',
+    marginBottom: 8,
+  },
+  resultDescription: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
