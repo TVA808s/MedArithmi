@@ -1,3 +1,4 @@
+// SettingsScreen.tsx
 import React from 'react';
 import {
   View,
@@ -7,7 +8,6 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
-  Switch,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
@@ -15,82 +15,12 @@ import type {ScreensList} from '../types/navigation';
 import {BottomBar} from '../components/BottomBar';
 import {useSettings} from '../context/SettingsContext';
 import notificationService from '../services/NotificationService';
-import Icon, {IconName} from '../components/Icons';
+import Card from '../components/Card';
 
 type SettingsScreenNavigationProp = StackNavigationProp<
   ScreensList,
   'Settings'
 >;
-
-interface SettingCardProps {
-  iconName: IconName;
-  iconColor: string;
-  circleBackgroundColor: string;
-  title: string;
-  description: string;
-  value: boolean;
-  onToggle: () => void;
-  disabled?: boolean;
-}
-
-interface InfoCardProps {
-  iconName: IconName;
-  iconColor: string;
-  cardBackgroundColor: string;
-  circleBackgroundColor: string;
-  title: string;
-  description: string;
-}
-
-const SettingCard: React.FC<SettingCardProps> = ({
-  iconName,
-  iconColor,
-  circleBackgroundColor,
-  title,
-  description,
-  value,
-  onToggle,
-  disabled,
-}) => (
-  <View style={styles.card}>
-    <View style={styles.cardHeader}>
-      <View style={[styles.iconCircle, {backgroundColor: circleBackgroundColor}]}>
-        <Icon name={iconName} size={24} color={iconColor} />
-      </View>
-      <View style={styles.titleContainer}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        <Switch
-          trackColor={{false: '#E0E0E0', true: iconColor}}
-          thumbColor={'#FFFFFF'}
-          ios_backgroundColor="#E0E0E0"
-          onValueChange={onToggle}
-          value={value}
-          disabled={disabled}
-        />
-      </View>
-    </View>
-    <Text style={styles.cardDescription}>{description}</Text>
-  </View>
-);
-
-const InfoCard: React.FC<InfoCardProps> = ({
-  iconName,
-  iconColor,
-  cardBackgroundColor,
-  circleBackgroundColor,
-  title,
-  description,
-}) => (
-  <View style={[styles.card, {backgroundColor: cardBackgroundColor}]}>
-    <View style={styles.cardHeader}>
-      <View style={[styles.iconCircle, {backgroundColor: circleBackgroundColor}]}>
-        <Icon name={iconName} size={24} color={iconColor} />
-      </View>
-      <Text style={styles.cardTitle}>{title}</Text>
-    </View>
-    <Text style={styles.cardDescription}>{description}</Text>
-  </View>
-);
 
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
@@ -162,37 +92,42 @@ export function SettingsScreen() {
       <View style={styles.content}>
         <Text style={styles.title}>Настройки</Text>
 
-        <SettingCard
-          iconName="notification"
-          iconColor="#FFA000"
-          circleBackgroundColor="#FFF3E0"
+        {/* Карточка уведомлений */}
+        <Card
+          type="setting"
           title="Ежедневные уведомления"
           description="Ежедневные напоминания о тренировках в 9:00 утра"
-          value={allowMessages}
-          onToggle={handleMessagesToggle}
-          disabled={isLoading}
+          iconName="notification"
+          iconColor="#FFA000"
+          switchValue={allowMessages}
+          onSwitchToggle={handleMessagesToggle}
+          switchDisabled={isLoading}
         />
 
-        <SettingCard
-          iconName="guard"
-          iconColor="#2196F3"
-          circleBackgroundColor="#E3F2FD"
+        {/* Карточка аналитики */}
+        <Card
+          type="setting"
           title="Анонимная аналитика"
           description="Помогает улучшать приложение"
-          value={allowAnalytics}
-          onToggle={handleAnalyticsToggle}
-          disabled={isLoading}
+          iconName="guard"
+          iconColor="#2196F3"
+          switchValue={allowAnalytics}
+          onSwitchToggle={handleAnalyticsToggle}
+          switchDisabled={isLoading}
+          iconCircleColor="#d1eaff"
         />
 
-        <InfoCard
-          iconName="info"
-          iconColor="#4CAF50"
-          cardBackgroundColor="#c5ffca"
-          circleBackgroundColor="#FFFFFF"
+        {/* Информационная карточка о приватности */}
+        <Card
+          type="settingInfo"
           title="Мы ценим вашу приватность"
           description="Все вводимые вами данные (возраст, ЧСС покоя) обрабатываются локально на вашем устройстве и не отправляются на наши сервера для хранения."
+          iconName="info"
+          iconColor="#4CAF50"
+          backgroundColor="#c5ffca"
         />
 
+        {/* Кнопка теста уведомления (остается отдельно, так как это не карточка) */}
         <TouchableOpacity
           style={[styles.testButton, isTesting && styles.testButtonDisabled]}
           onPress={handleTestNotification}
@@ -231,44 +166,7 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     width: '100%',
   },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 16,
-    marginBottom: 20,
-    width: '100%',
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  titleContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    flex: 1,
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: '#718096',
-    lineHeight: 18,
-    marginLeft: 52,
-  },
+  // Стили для кнопки теста (остаются уникальными)
   testButton: {
     backgroundColor: '#4A90E2',
     padding: 15,

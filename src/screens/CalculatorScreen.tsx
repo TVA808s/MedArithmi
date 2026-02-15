@@ -1,3 +1,4 @@
+// CalculatorScreen.tsx
 import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
@@ -17,7 +18,8 @@ import {BottomBar} from '../components/BottomBar';
 import {usePulse} from '../context/PulseContext';
 import CalculatorService from '../services/CalculatorService';
 import FirebaseService from '../services/FirebaseService';
-import Icon, {IconName} from '../components/Icons';
+import Card from '../components/Card'; // Импортируем Card (default export)
+import Icon from '../components/Icons'; // Импортируем Icon
 
 type CalculatorScreenNavigationProp = StackNavigationProp<
   ScreensList,
@@ -25,32 +27,12 @@ type CalculatorScreenNavigationProp = StackNavigationProp<
 >;
 type CalculatorScreenRouteProp = RouteProp<ScreensList, 'Calculator'>;
 
-// Маппинг цветов для зон
-const ZONE_COLORS: Record<string, string> = {
-  Восстановление: '#339e1a',
-  Аэробная: '#9e1a72',
-  Темповая: '#1a9e97',
-  Анаэробная: '#9e691a',
-  Максимальная: '#9e1a1a',
-};
-
-// Маппинг фоновых цветов для зон
-const ZONE_BACKGROUNDS: Record<string, string> = {
-  Восстановление: '#ebffe7',
-  Аэробная: '#ffe7f1',
-  Темповая: '#e7faff',
-  Анаэробная: '#fff5e7',
-  Максимальная: '#ffe7e7',
-};
-
 export function CalculatorScreen() {
   const navigation = useNavigation<CalculatorScreenNavigationProp>();
   const route = useRoute<CalculatorScreenRouteProp>();
   const {updatePulseData} = usePulse();
 
   const zoneName = (route.params as any)?.zoneName || 'Аэробная';
-  const zoneColor = ZONE_COLORS[zoneName] || '#A21812';
-  const zoneBackground = ZONE_BACKGROUNDS[zoneName] || '#FFFFFF';
 
   const bottomBarItems = [
     {
@@ -191,29 +173,21 @@ export function CalculatorScreen() {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-
           {/* Карточка с подсказкой */}
-          <View style={styles.hintCard}>
-            <View style={styles.cardHeader}>
-              <View style={[styles.iconCircle, {backgroundColor: '#ffffff'}]}>
-                <Icon name="info" size={22} color="#005db9" />
-              </View>
-              <Text style={styles.hintCardTitle}>Как измерить ЧСС покоя?</Text>
-            </View>
-            <Text style={styles.hintCardDescription}>
-              Измерьте пульс в течение минуты утром после пробуждения или после 15 мин отдыха сидя/лежа.
-            </Text>
-          </View>
+          <Card
+            type="hint"
+            title="Как измерить ЧСС покоя?"
+            description="Измерьте пульс в течение минуты утром после пробуждения или после 15 мин отдыха сидя/лежа."
+            iconName="info"
+          />
 
           {/* Карточка ввода данных */}
-          <View style={styles.inputCard}>
-            <View style={styles.cardHeader}>
-              <View style={[styles.iconCircle, {backgroundColor: '#FFF3E0'}]}>
-                <Icon name="calculator" size={24} color="#FFA000" />
-              </View>
-              <Text style={styles.cardTitle}>Введите данные</Text>
-            </View>
-
+          <Card
+            type="calculator"
+            title="Введите данные"
+            iconName="calculator"
+            iconColor="#FFA000"
+            iconCircleColor="#FFF3E0">
             <View style={styles.inputSection}>
               {/* Поле Возраст */}
               <View style={styles.inputFieldContainer}>
@@ -230,7 +204,9 @@ export function CalculatorScreen() {
                   />
                   <Text style={styles.inputFieldUnit}>лет</Text>
                 </View>
-                {ageError ? <Text style={styles.errorText}>{ageError}</Text> : null}
+                {ageError ? (
+                  <Text style={styles.errorText}>{ageError}</Text>
+                ) : null}
               </View>
 
               <View style={styles.inputDivider} />
@@ -240,7 +216,10 @@ export function CalculatorScreen() {
                 <Text style={styles.inputFieldLabel}>ЧСС покоя</Text>
                 <View style={styles.inputFieldRow}>
                   <TextInput
-                    style={[styles.inputField, {borderColor: restingHRBorderColor}]}
+                    style={[
+                      styles.inputField,
+                      {borderColor: restingHRBorderColor},
+                    ]}
                     value={restingHR}
                     onChangeText={handleRestingHRChange}
                     placeholder="от 40 до 100"
@@ -250,33 +229,22 @@ export function CalculatorScreen() {
                   />
                   <Text style={styles.inputFieldUnit}>уд/мин</Text>
                 </View>
-                {restingHRError ? <Text style={styles.errorText}>{restingHRError}</Text> : null}
+                {restingHRError ? (
+                  <Text style={styles.errorText}>{restingHRError}</Text>
+                ) : null}
               </View>
             </View>
-          </View>
+          </Card>
 
           {/* Блок результата */}
           {calculationResult ? (
-            <View style={[styles.resultCard, {backgroundColor: zoneBackground, borderColor: zoneColor}]}>
-              <View style={styles.resultContent}>
-                <View style={[styles.resultIconCircle, {backgroundColor: zoneColor}]}>
-                  <Icon name="heart" size={32} color="#FFFFFF" />
-                </View>
-                <Text style={[styles.resultZoneName, {color: zoneColor}]}>
-                  {zoneName}
-                </Text>
-                <Text style={[styles.resultValue, {color: zoneColor}]}>
-                  {calculationResult.zoneLimits.min} - {calculationResult.zoneLimits.max}
-                </Text>
-                <Text style={[styles.resultUnit, {color: zoneColor}]}>
-                  уд/мин
-                </Text>
-                <View style={[styles.resultDivider, {backgroundColor: zoneColor + '40'}]} />
-                <Text style={[styles.resultDescription, {color: zoneColor}]}>
-                  {CalculatorService.getZoneInterpretation(zoneName)}
-                </Text>
-              </View>
-            </View>
+            <Card
+              type="result"
+              zoneName={zoneName}
+              value={`${calculationResult.zoneLimits.min} - ${calculationResult.zoneLimits.max}`}
+              unit="уд/мин"
+              description={CalculatorService.getZoneInterpretation(zoneName)}
+            />
           ) : (
             /* Пустой блок результата */
             <View style={styles.emptyResultCard}>
@@ -311,60 +279,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: '8%',
     paddingBottom: 20,
   },
-  // Карточка подсказки
-  hintCard: {
-    backgroundColor: '#e8f5ff',
-    borderRadius: 24,
-    padding: 16,
-    marginBottom: 16,
-    width: '100%',
-    elevation: 3,
-  },
-  hintCardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#005db9',
-  },
-  hintCardDescription: {
-    fontSize: 14,
-    color: '#3c9dff',
-    lineHeight: 16,
-    marginLeft: 52,
-  },
-  // Карточка ввода
-  inputCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 16,
-    marginBottom: 16,
-    width: '100%',
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: '#718096',
-    lineHeight: 18,
-    marginLeft: 52,
-  },
+  // Стили для секции ввода
   inputSection: {
     marginTop: 8,
+  },
+  inputFieldContainer: {
+    marginBottom: 8,
   },
   inputFieldLabel: {
     fontSize: 16,
@@ -421,50 +341,6 @@ const styles = StyleSheet.create({
     color: '#718096',
     textAlign: 'center',
     marginTop: 16,
-    lineHeight: 22,
-  },
-  // Блок с результатом
-  resultCard: {
-    width: '100%',
-    borderRadius: 24,
-    borderWidth: 2,
-    overflow: 'hidden',
-  },
-  resultContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  resultIconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  resultZoneName: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  resultValue: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  resultUnit: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  resultDivider: {
-    height: 1,
-    width: '80%',
-    marginBottom: 8,
-  },
-  resultDescription: {
-    fontSize: 16,
-    textAlign: 'center',
     lineHeight: 22,
   },
 });

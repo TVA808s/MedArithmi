@@ -172,7 +172,7 @@ class DatabaseService {
     return result[0]?.insertId || -1;
   }
 
-  async getCalculationHistory(limit: number = 50): Promise<any[]> {
+  async getCalculationHistory(limit: number = 20): Promise<any[]> {
     const query = `
       SELECT * FROM calculations 
       ORDER BY calculation_date DESC 

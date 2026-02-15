@@ -1,4 +1,5 @@
-import React, {useState} from 'react';
+// MainScreen.tsx
+import React, {useCallback, useEffect, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -7,85 +8,109 @@ import {
   ScrollView,
   Text,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import type {StackNavigationProp} from '@react-navigation/stack';
 import type {ScreensList} from '../types/navigation';
 import {BottomBar} from '../components/BottomBar';
-import {CalculatorCard} from '../components/CalculatorCard';
+import Card, {ZoneName, ZONE_COLORS} from '../components/Card';
+import {usePulse} from '../context/PulseContext';
+import DatabaseService from '../services/DatabaseService';
 
-// Тип для навигации
 type MainScreenNavigationProp = StackNavigationProp<ScreensList, 'Main'>;
 
 const calculators = [
   {
     id: '1',
-    title: 'Восстановление',
+    zoneName: 'Восстановление' as ZoneName,
     description:
       'Улучшение кровотока и активное восстановление. Для разминки и заминки.',
-    navigateTo: 'Calculator' as const,
-    params: {zoneName: 'Восстановление'},
-    iconName: 'plant' as const,
-    iconSize: 42,
-    backgroundColor: '#ebffe7',
-    borderColor: '#aaec9c',
-    textColor: '#339e1a',
   },
   {
     id: '2',
-    title: 'Аэробная',
+    zoneName: 'Аэробная' as ZoneName,
     description:
       'Базовая выносливость и укрепление сердечно-сосудистой системы. Жиросжигание.',
-    navigateTo: 'Calculator' as const,
-    params: {zoneName: 'Аэробная'},
-    iconName: 'heart' as const,
-    iconSize: 42,
-    backgroundColor: '#ffe7f1',
-    borderColor: '#ec9ccb',
-    textColor: '#9e1a72',
   },
   {
     id: '3',
-    title: 'Темповая',
+    zoneName: 'Темповая' as ZoneName,
     description:
       'Повышение анаэробного порога и функциональной выносливости. Высокий темп.',
-    navigateTo: 'Calculator' as const,
-    params: {zoneName: 'Темповая'},
-    iconName: 'droplet' as const,
-    iconSize: 42,
-    backgroundColor: '#e7faff',
-    borderColor: '#9cece1',
-    textColor: '#1a9e97',
   },
   {
     id: '4',
-    title: 'Анаэробная',
+    zoneName: 'Анаэробная' as ZoneName,
     description:
       'Развитие скорости, мощности и мышечной выносливости. Кислородный долг.',
-    navigateTo: 'Calculator' as const,
-    params: {zoneName: 'Анаэробная'},
-    iconName: 'star' as const,
-    iconSize: 42,
-    backgroundColor: '#fff5e7',
-    borderColor: '#ecc99c',
-    textColor: '#9e691a',
   },
   {
     id: '5',
-    title: 'Максимальная',
+    zoneName: 'Максимальная' as ZoneName,
     description: 'Короткие интервалы максимальной скорости и взрывной силы.',
-    navigateTo: 'Calculator' as const,
-    params: {zoneName: 'Максимальная'},
-    iconName: 'lightning' as const,
-    iconSize: 42,
-    backgroundColor: '#ffe7e7',
-    borderColor: '#ec9c9c',
-    textColor: '#9e1a1a',
   },
 ];
 
 export function MainScreen() {
   const navigation = useNavigation<MainScreenNavigationProp>();
-  const [_searchQuery, _setSearchQuery] = useState('');
+  const {updatePulseData} = usePulse();
+
+  // Используем ref для предотвращения множественных загрузок
+  const isLoadingRef = useRef(false);
+  const lastLoadTimeRef = useRef(0);
+
+  const loadLastCalculation = useCallback(async () => {
+    // Предотвращаем множественные загрузки
+    if (isLoadingRef.current) {
+      return;
+    }
+
+    // Загружаем не чаще чем раз в 2 секунды
+    const now = Date.now();
+    if (now - lastLoadTimeRef.current < 2000) {
+      return;
+    }
+
+    isLoadingRef.current = true;
+
+    try {
+      console.log('Загрузка последнего расчета для TopBar...');
+      const startTime = Date.now();
+
+      const last = await DatabaseService.getLastCalculation();
+
+      console.log(`Последний расчет загружен за ${Date.now() - startTime}ms`);
+
+      if (last) {
+        updatePulseData({
+          zoneRange: last.zoneRange,
+          restingHR: last.restingHR,
+        });
+      }
+
+      lastLoadTimeRef.current = Date.now();
+    } catch (error) {
+      console.error('Ошибка загрузки последнего расчета:', error);
+    } finally {
+      isLoadingRef.current = false;
+    }
+  }, [updatePulseData]);
+
+  // Загружаем только при первом монтировании
+  useEffect(() => {
+    loadLastCalculation();
+  }, [loadLastCalculation]);
+
+  // Загружаем только при возврате с других экранов, но с защитой от частых вызовов
+  useFocusEffect(
+    useCallback(() => {
+      // Не загружаем если с момента последней загрузки прошло меньше 2 секунд
+      const now = Date.now();
+      if (now - lastLoadTimeRef.current > 2000) {
+        loadLastCalculation();
+      }
+    }, [loadLastCalculation]),
+  );
+
   const bottomBarItems = [
     {
       iconName: 'history' as const,
@@ -99,12 +124,14 @@ export function MainScreen() {
     },
   ];
 
+  const handleCardPress = (zoneName: ZoneName) => {
+    navigation.navigate('Calculator', {zoneName});
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Верхний бар */}
       <StatusBar barStyle="dark-content" backgroundColor="#F0F5EE" />
 
-      {/* Основной контент */}
       <View style={styles.content}>
         <ScrollView
           contentContainerStyle={styles.scrollViewContent}
@@ -112,20 +139,24 @@ export function MainScreen() {
           <Text style={styles.title}>
             Выберите предпочитаемый уровень нагрузки
           </Text>
-          {/* Отображаем все калькуляторы без категорий */}
+
           {calculators.map(calc => (
-            <CalculatorCard
+            <Card
               key={calc.id}
-              id={calc.id}
-              title={calc.title}
+              type="main"
+              zoneName={calc.zoneName}
               description={calc.description}
-              navigateTo={calc.navigateTo}
-              iconName={calc.iconName}
-              iconSize={calc.iconSize}
-              params={calc.params}
-              backgroundColor={calc.backgroundColor}
-              borderColor={calc.borderColor}
-              textColor={calc.textColor}
+              onPress={() => handleCardPress(calc.zoneName)}
+              iconSize={36}
+              rightContent={
+                <Text
+                  style={[
+                    styles.arrowText,
+                    {color: ZONE_COLORS[calc.zoneName]},
+                  ]}>
+                  {'>>>'}
+                </Text>
+              }
             />
           ))}
         </ScrollView>
@@ -157,5 +188,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     lineHeight: 36,
     marginHorizontal: '8%',
+  },
+  arrowText: {
+    fontFamily: 'sans-serif-medium',
+    fontSize: 21,
+    fontWeight: '600',
+    opacity: 0.5,
   },
 });
