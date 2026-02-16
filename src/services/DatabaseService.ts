@@ -13,14 +13,27 @@ export const SETTINGS_KEYS = {
 export interface UserProfile {
   name: string;
   age: string;
+  hasCompletedOnboarding: boolean;
 }
 
 SQLite.enablePromise(true);
 
 class DatabaseService {
   private db: SQLite.SQLiteDatabase | null = null;
-
+  private initializationPromise: Promise<void> | null = null;
+  private saveInProgress = false;
+  private lastSaveTime = 0;
   async initializeDatabase(): Promise<void> {
+    // Если уже инициализируем, возвращаем существующий промис
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this._initializeDatabase();
+    return this.initializationPromise;
+  }
+
+  private async _initializeDatabase(): Promise<void> {
     try {
       console.log('Opening database...');
       this.db = await SQLite.openDatabase({
@@ -36,7 +49,16 @@ class DatabaseService {
       console.log('Default settings initialized');
     } catch (error) {
       console.error('Database initialization error:', error);
+      this.initializationPromise = null; // Сбрасываем при ошибке
       throw error;
+    }
+  }
+
+  // НОВЫЙ МЕТОД: проверка инициализации
+  private async ensureInitialized(): Promise<void> {
+    if (!this.db) {
+      console.log('Database not initialized, initializing now...');
+      await this.initializeDatabase();
     }
   }
 
@@ -91,15 +113,20 @@ class DatabaseService {
       if (existingAge === null) {
         await this.saveSetting('user_age', '');
       }
+
+      const existingOnboarding = await this.getSetting(
+        'has_completed_onboarding',
+      );
+      if (existingOnboarding === null) {
+        await this.saveSetting('has_completed_onboarding', 'false');
+      }
     } catch (error) {
       console.error('Error initializing default settings:', error);
     }
   }
 
   private async executeQuery<T>(sql: string, params: any[]): Promise<T[]> {
-    if (!this.db) {
-      throw new Error('Database not initialized');
-    }
+    await this.ensureInitialized(); // Добавляем проверку
 
     return new Promise((resolve, reject) => {
       this.db!.transaction(tx => {
@@ -123,9 +150,7 @@ class DatabaseService {
   }
 
   private async executeAction(sql: string, params: any[]): Promise<boolean> {
-    if (!this.db) {
-      throw new Error('Database not initialized');
-    }
+    await this.ensureInitialized(); // Добавляем проверку
 
     return new Promise((resolve, reject) => {
       this.db!.transaction(tx => {
@@ -146,6 +171,7 @@ class DatabaseService {
 
   // Методы для настроек
   async saveSetting(key: string, value: string): Promise<void> {
+    await this.ensureInitialized(); // Добавляем проверку
     const query = `
       INSERT OR REPLACE INTO user_settings (key, value) 
       VALUES (?, ?)
@@ -155,54 +181,83 @@ class DatabaseService {
   }
 
   async getSetting(key: string): Promise<string | null> {
+    await this.ensureInitialized(); // Добавляем проверку
     const query = 'SELECT value FROM user_settings WHERE key = ?';
     const result = await this.executeQuery<{value: string}>(query, [key]);
     return result[0]?.value || null;
   }
 
   async getBooleanSetting(key: string): Promise<boolean> {
+    await this.ensureInitialized(); // Добавляем проверку
     const value = await this.getSetting(key);
     return value === 'true';
   }
 
+  // Методы для профиля пользователя
   async saveUserProfile(profile: UserProfile): Promise<void> {
+    // Защита от множественных одновременных сохранений
+    if (this.saveInProgress) {
+      console.log('Save already in progress, queueing...');
+      // Ждем немного и пробуем снова
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return this.saveUserProfile(profile);
+    }
+
     try {
-      console.log('Saving user profile:', profile);
+      this.saveInProgress = true;
+      console.log('Saving user profile to DB:', profile);
+      await this.ensureInitialized();
+
       await this.saveSetting('user_name', profile.name || '');
       await this.saveSetting('user_age', profile.age || '');
-      // await this.saveSetting('user_frequency', profile.frequency || ''); // удалено
-      console.log('Profile saved successfully');
+      await this.saveSetting(
+        'has_completed_onboarding',
+        profile.hasCompletedOnboarding ? 'true' : 'false',
+      );
+
+      this.lastSaveTime = Date.now();
+      console.log('Profile saved successfully to DB');
     } catch (error) {
       console.error('Error saving profile:', error);
       throw error;
+    } finally {
+      this.saveInProgress = false;
     }
   }
-
-  // Обновить метод getUserProfile
   async getUserProfile(): Promise<UserProfile> {
     try {
-      console.log('Loading user profile...');
-      const [name, age] = await Promise.all([
+      console.log('========== DATABASE LOAD ==========');
+      await this.ensureInitialized();
+
+      const [name, age, hasCompletedOnboarding] = await Promise.all([
         this.getSetting('user_name'),
         this.getSetting('user_age'),
-        // this.getSetting('user_frequency'), // удалено
+        this.getSetting('has_completed_onboarding'),
       ]);
+
+      console.log('Raw DB values:', {
+        name: `"${name}"`,
+        age: `"${age}"`,
+        hasCompletedOnboarding: `"${hasCompletedOnboarding}"`,
+      });
 
       const profile = {
         name: name || '',
         age: age || '',
-        // frequency: frequency || '', // удалено
+        hasCompletedOnboarding: hasCompletedOnboarding === 'true',
       };
 
-      console.log('Profile loaded:', profile);
+      console.log('Profile loaded from DB:', profile);
+      console.log('========== DATABASE LOAD COMPLETE ==========');
       return profile;
     } catch (error) {
       console.error('Error loading profile:', error);
-      return {name: '', age: ''};
+      return {name: '', age: '', hasCompletedOnboarding: false};
     }
   }
 
   async getUserAge(): Promise<string> {
+    await this.ensureInitialized(); // Добавляем проверку
     return (await this.getSetting('user_age')) || '';
   }
 
@@ -214,6 +269,8 @@ class DatabaseService {
     zoneMin: number;
     zoneMax: number;
   }): Promise<number> {
+    await this.ensureInitialized(); // Добавляем проверку
+
     const query = `
       INSERT INTO calculations 
       (zone_name, age, resting_hr, zone_min, zone_max) 
@@ -238,6 +295,8 @@ class DatabaseService {
   }
 
   async getCalculationHistory(limit: number = 20): Promise<any[]> {
+    await this.ensureInitialized(); // Добавляем проверку
+
     const query = `
       SELECT * FROM calculations 
       ORDER BY calculation_date DESC 
@@ -251,6 +310,8 @@ class DatabaseService {
     zoneRange: string;
     restingHR: string;
   } | null> {
+    await this.ensureInitialized(); // Добавляем проверку
+
     try {
       const query = `
         SELECT zone_min, zone_max, resting_hr 
@@ -276,6 +337,8 @@ class DatabaseService {
   }
 
   async getCalculationsByZone(zoneName: string): Promise<any[]> {
+    await this.ensureInitialized(); // Добавляем проверку
+
     const query = `
       SELECT * FROM calculations 
       WHERE zone_name = ? 
@@ -286,6 +349,8 @@ class DatabaseService {
   }
 
   async deleteCalculation(id: number): Promise<boolean> {
+    await this.ensureInitialized(); // Добавляем проверку
+
     try {
       const query = 'DELETE FROM calculations WHERE id = ?';
       const result = await this.executeAction(query, [id]);
@@ -301,6 +366,7 @@ class DatabaseService {
     if (this.db) {
       await this.db.close();
       this.db = null;
+      this.initializationPromise = null;
     }
   }
 }

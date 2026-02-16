@@ -5,25 +5,38 @@ import React, {
   useContext,
   useEffect,
   ReactNode,
+  useCallback,
 } from 'react';
 import DatabaseService, {UserProfile} from '../services/DatabaseService';
 
 interface ProfileContextType {
   profile: UserProfile;
-  updateProfile: (field: keyof UserProfile, value: string) => Promise<void>;
+  updateProfile: (
+    field: keyof UserProfile,
+    value: string | boolean,
+  ) => Promise<void>;
+  updateProfileBatch: (updates: Partial<UserProfile>) => Promise<void>;
   loadProfile: () => Promise<void>;
   validationErrors: {name: string; age: string};
+  completeOnboarding: () => Promise<void>;
+  isLoading: boolean; // Добавляем состояние загрузки
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export function ProfileProvider({children}: {children: ReactNode}) {
-  const [profile, setProfile] = useState<UserProfile>({name: '', age: ''});
+  const [profile, setProfile] = useState<UserProfile>({
+    name: '',
+    age: '',
+    hasCompletedOnboarding: false,
+  });
   const [validationErrors, setValidationErrors] = useState({name: '', age: ''});
+  const [isLoading, setIsLoading] = useState(true); // Добавляем состояние загрузки
+  const [isInitialized, setIsInitialized] = useState(false); // Флаг инициализации
 
   const validateName = (name: string): string => {
     if (!name.trim()) {
-      return ''; // Пустое имя разрешено (необязательное поле)
+      return 'Имя обязательно для заполнения';
     }
     if (name.trim().length < 2) {
       return 'Имя должно содержать минимум 2 символа';
@@ -39,82 +52,135 @@ export function ProfileProvider({children}: {children: ReactNode}) {
 
   const validateAge = (age: string): string => {
     if (!age.trim()) {
-      return ''; // Пустой возраст разрешен (необязательное поле)
+      return 'Возраст обязателен для заполнения';
     }
-
-    // Проверяем, что строка состоит только из цифр
     if (!/^\d+$/.test(age)) {
       return 'Возраст должен содержать только цифры';
     }
-
     const ageNum = parseInt(age, 10);
-    if (isNaN(ageNum)) {
-      return 'Возраст должен быть числом';
-    }
-    if (ageNum < 1) {
-      return 'Возраст должен быть больше 0';
-    }
-    if (ageNum > 120) {
-      return 'Возраст не может быть больше 120 лет';
+    if (isNaN(ageNum) || ageNum < 1 || ageNum > 120) {
+      return 'Возраст должен быть от 1 до 120 лет';
     }
     return '';
   };
 
-  const updateProfile = async (field: keyof UserProfile, value: string) => {
-    try {
-      console.log(`Updating profile field ${field} to:`, value);
-
-      // Валидация перед обновлением
-      let error = '';
-      if (field === 'name') {
-        error = validateName(value);
-      } else if (field === 'age') {
-        error = validateAge(value);
-      }
-
-      // Обновляем ошибки валидации
-      setValidationErrors(prev => ({...prev, [field]: error}));
-
-      // Если есть ошибка, не сохраняем в БД
-      if (error) {
-        console.log('Validation error:', error);
-        // Все равно обновляем UI, но не сохраняем
-        setProfile(prev => ({...prev, [field]: value}));
+  const loadProfile = useCallback(
+    async (force: boolean = false) => {
+      // Если уже инициализировано и не форсируем, пропускаем
+      if (isInitialized && !force) {
+        console.log('Profile already initialized, skipping load');
         return;
       }
 
-      // Обновляем профиль
-      const newProfile = {...profile, [field]: value};
-      setProfile(newProfile);
+      try {
+        setIsLoading(true);
+        console.log('Loading profile from DatabaseService...');
+        const loadedProfile = await DatabaseService.getUserProfile();
+        console.log('Profile loaded:', loadedProfile);
 
-      // Сохраняем в БД только если нет ошибок
-      await DatabaseService.saveUserProfile(newProfile);
-      console.log('Profile updated successfully');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-    }
-  };
+        setProfile(loadedProfile);
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isInitialized],
+  );
 
-  const loadProfile = async () => {
-    try {
-      console.log('Loading profile from DatabaseService...');
-      const loadedProfile = await DatabaseService.getUserProfile();
-      console.log('Profile loaded in context:', loadedProfile);
-      setProfile(loadedProfile);
-      // Сбрасываем ошибки при загрузке
-      setValidationErrors({name: '', age: ''});
-    } catch (error) {
-      console.error('Error loading profile in context:', error);
-    }
-  };
+  const updateProfile = useCallback(
+    async (field: keyof UserProfile, value: string | boolean) => {
+      try {
+        console.log(`Updating profile field ${field} to:`, value);
 
+        // Валидация
+        if (field === 'name' && typeof value === 'string') {
+          const error = validateName(value);
+          setValidationErrors(prev => ({...prev, name: error}));
+          if (error) {
+            setProfile(prev => ({...prev, [field]: value}));
+            return;
+          }
+        } else if (field === 'age' && typeof value === 'string') {
+          const error = validateAge(value);
+          setValidationErrors(prev => ({...prev, age: error}));
+          if (error) {
+            setProfile(prev => ({...prev, [field]: value}));
+            return;
+          }
+        }
+
+        // Обновляем локальное состояние
+        setProfile(prev => {
+          const newProfile = {...prev, [field]: value};
+          // Сохраняем в БД после обновления состояния
+          DatabaseService.saveUserProfile(newProfile).catch(console.error);
+          return newProfile;
+        });
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        throw error;
+      }
+    },
+    [],
+  );
+
+  const updateProfileBatch = useCallback(
+    async (updates: Partial<UserProfile>) => {
+      try {
+        console.log('Batch updating profile:', updates);
+
+        // Валидация
+        if (updates.name !== undefined) {
+          const error = validateName(updates.name);
+          if (error) {
+            throw new Error(error);
+          }
+        }
+
+        if (updates.age !== undefined) {
+          const error = validateAge(updates.age);
+          if (error) {
+            throw new Error(error);
+          }
+        }
+
+        // Обновляем локальное состояние
+        setProfile(prev => {
+          const newProfile = {...prev, ...updates};
+          // Сохраняем в БД после обновления состояния
+          DatabaseService.saveUserProfile(newProfile).catch(console.error);
+          return newProfile;
+        });
+      } catch (error) {
+        console.error('Error in batch profile update:', error);
+        throw error;
+      }
+    },
+    [],
+  );
+
+  const completeOnboarding = useCallback(async () => {
+    await updateProfile('hasCompletedOnboarding', true);
+  }, [updateProfile]);
+
+  // Загружаем профиль только один раз при монтировании
   useEffect(() => {
-    loadProfile();
-  }, []);
+    loadProfile(true); // force = true при первой загрузке
+  }, [loadProfile]); // Пустой массив зависимостей - только при монтировании
 
   return (
     <ProfileContext.Provider
-      value={{profile, updateProfile, loadProfile, validationErrors}}>
+      value={{
+        profile,
+        updateProfile,
+        updateProfileBatch,
+        loadProfile,
+        validationErrors,
+        completeOnboarding,
+        isLoading,
+      }}>
       {children}
     </ProfileContext.Provider>
   );

@@ -1,5 +1,5 @@
 // CalculatorScreen.tsx
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import type {RouteProp} from '@react-navigation/native';
 import {KeyboardAvoidingView, Platform} from 'react-native';
 import {BottomBar} from '../components/BottomBar';
 import {usePulse} from '../context/PulseContext';
-import {useProfile} from '../context/ProfileContext'; // Добавить импорт
+import {useProfile} from '../context/ProfileContext';
 import CalculatorService from '../services/CalculatorService';
 import FirebaseService from '../services/FirebaseService';
 import Card from '../components/Card';
@@ -28,46 +28,13 @@ type CalculatorScreenNavigationProp = StackNavigationProp<
 >;
 type CalculatorScreenRouteProp = RouteProp<ScreensList, 'Calculator'>;
 
-// Маппинг цветов для зон
-const ZONE_COLORS: Record<string, string> = {
-  Восстановление: '#339e1a',
-  Аэробная: '#9e1a72',
-  Темповая: '#1a9e97',
-  Анаэробная: '#9e691a',
-  Максимальная: '#9e1a1a',
-};
-
-// Маппинг фоновых цветов для зон
-const ZONE_BACKGROUNDS: Record<string, string> = {
-  Восстановление: '#ebffe7',
-  Аэробная: '#ffe7f1',
-  Темповая: '#e7faff',
-  Анаэробная: '#fff5e7',
-  Максимальная: '#ffe7e7',
-};
-
-// Маппинг иконок для зон
-const ZONE_ICONS: Record<
-  string,
-  'plant' | 'heart' | 'droplet' | 'star' | 'lightning'
-> = {
-  Восстановление: 'plant',
-  Аэробная: 'heart',
-  Темповая: 'droplet',
-  Анаэробная: 'star',
-  Максимальная: 'lightning',
-};
-
 export function CalculatorScreen() {
   const navigation = useNavigation<CalculatorScreenNavigationProp>();
   const route = useRoute<CalculatorScreenRouteProp>();
   const {updatePulseData} = usePulse();
-  const {profile} = useProfile(); // Получаем профиль из контекста
+  const {profile} = useProfile();
 
   const zoneName = (route.params as any)?.zoneName || 'Аэробная';
-  const zoneColor = ZONE_COLORS[zoneName] || '#A21812';
-  const zoneBackground = ZONE_BACKGROUNDS[zoneName] || '#FFFFFF';
-  const zoneIcon = ZONE_ICONS[zoneName] || 'heart';
 
   const bottomBarItems = [
     {
@@ -82,7 +49,6 @@ export function CalculatorScreen() {
     },
   ];
 
-  // Состояния
   const [age, setAge] = useState('');
   const [restingHR, setRestingHR] = useState('');
   const [ageError, setAgeError] = useState('');
@@ -95,24 +61,18 @@ export function CalculatorScreen() {
     zoneLimits: {min: number; max: number};
   } | null>(null);
 
-  // Флаг для отслеживания, был ли уже установлен возраст из профиля
   const hasSetAgeFromProfile = useRef(false);
-
-  // Для предотвращения бесконечного цикла
   const lastZoneLimitsRef = useRef<string>('');
   const lastRestingHRRef = useRef<string>('');
 
-  // Эффект для установки возраста из профиля при загрузке
   useEffect(() => {
-    // Если в профиле есть возраст и поле возраста пустое, и мы еще не устанавливали его
     if (profile.age && !age && !hasSetAgeFromProfile.current) {
       console.log('Setting age from profile:', profile.age);
       handleAgeChange(profile.age);
       hasSetAgeFromProfile.current = true;
     }
-  }, [profile.age]); // Зависимость от profile.age
+  }, [profile.age, age]);
 
-  // Обработчики ввода
   const handleAgeChange = (text: string) => {
     const cleaned = CalculatorService.cleanNumberInput(text);
     setAge(cleaned);
@@ -131,7 +91,6 @@ export function CalculatorScreen() {
     setRestingHRBorderColor(validation.isValid ? '#2BB641' : '#FF6060');
   };
 
-  // Динамичный расчет
   useEffect(() => {
     if (age && restingHR && !ageError && !restingHRError) {
       const result = CalculatorService.calculateAll({age, restingHR, zoneName});
@@ -141,7 +100,6 @@ export function CalculatorScreen() {
     }
   }, [age, restingHR, ageError, restingHRError, zoneName]);
 
-  // Обновление верхней панели
   useEffect(() => {
     if (calculationResult?.zoneLimits && restingHR) {
       const zoneLimitsKey = `${calculationResult.zoneLimits.min}-${calculationResult.zoneLimits.max}`;
@@ -161,7 +119,6 @@ export function CalculatorScreen() {
     }
   }, [calculationResult, restingHR, updatePulseData]);
 
-  // Сохранение в БД
   useEffect(() => {
     const saveToDB = async () => {
       if (calculationResult && age && restingHR) {
@@ -183,7 +140,6 @@ export function CalculatorScreen() {
           });
         } catch (error) {
           console.error('Ошибка сохранения:', error);
-
           await FirebaseService.logEvent('calculation_error', {
             zone: zoneName,
             error_message:
@@ -196,7 +152,6 @@ export function CalculatorScreen() {
     saveToDB();
   }, [calculationResult, age, restingHR, zoneName]);
 
-  // Функция очистки
   const clearAll = () => {
     setAge('');
     setRestingHR('');
@@ -205,7 +160,7 @@ export function CalculatorScreen() {
     setAgeBorderColor('#C0C0C0');
     setRestingHRBorderColor('#C0C0C0');
     setCalculationResult(null);
-    hasSetAgeFromProfile.current = false; // Сбрасываем флаг при очистке
+    hasSetAgeFromProfile.current = false;
 
     lastZoneLimitsRef.current = '';
     lastRestingHRRef.current = '';
@@ -328,7 +283,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: '8%',
     paddingBottom: 20,
   },
-  // Стили для секции ввода
   inputSection: {
     marginTop: 8,
   },
@@ -377,7 +331,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontStyle: 'italic',
   },
-  // Пустой блок результата
   emptyResultCard: {
     width: '100%',
   },

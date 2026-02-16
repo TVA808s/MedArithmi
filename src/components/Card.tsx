@@ -442,7 +442,7 @@ export const Card: React.FC<CardProps> = ({
     return (
       <>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconCircle, {backgroundColor: '#E3F2FD'}]}>
+          <View style={[styles.iconCircle, styles.profileIconCircle]}>
             <Icon name="person" size={24} color="#2196F3" />
           </View>
           <View style={styles.profileHeaderText}>
@@ -463,7 +463,10 @@ export const Card: React.FC<CardProps> = ({
                   {borderColor: nameBorderColor || '#E0E0E0'},
                 ]}
                 value={profile.name}
-                onChangeText={value => handleChange?.('name', value)}
+                onChangeText={newValue => {
+                  // Переименовано с value на newValue
+                  handleChange?.('name', newValue);
+                }}
                 placeholder="Введите ваше имя"
                 placeholderTextColor="#C0C0C0"
                 keyboardType="default"
@@ -492,7 +495,10 @@ export const Card: React.FC<CardProps> = ({
                   {borderColor: ageBorderColor || '#E0E0E0'},
                 ]}
                 value={profile.age}
-                onChangeText={value => handleChange?.('age', value)}
+                onChangeText={text => {
+                  const numericValue = text.replace(/[^0-9]/g, '');
+                  handleChange?.('age', numericValue);
+                }}
                 placeholder="Введите ваш возраст"
                 placeholderTextColor="#C0C0C0"
                 keyboardType="numeric"
@@ -642,6 +648,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  profileIconCircle: {
+    backgroundColor: '#E3F2FD',
   },
 
   // Стили для main карточки

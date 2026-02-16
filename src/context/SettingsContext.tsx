@@ -1,9 +1,11 @@
+// context/SettingsContext.tsx
 import React, {
   createContext,
   useContext,
   useState,
   useEffect,
   ReactNode,
+  useCallback, // Добавить импорт
 } from 'react';
 import DatabaseService from '../services/DatabaseService';
 import FirebaseService from '../services/FirebaseService';
@@ -32,90 +34,97 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
   const [allowAnalytics, setAllowAnalytics] = useState<boolean>(true);
   const [allowMessages, setAllowMessages] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  const loadSettings = async () => {
+  // Оборачиваем loadSettings в useCallback
+  const loadSettings = useCallback(async (retryCount = 0) => {
     try {
       setIsLoading(true);
       console.log('[SettingsContext] Loading settings from database...');
 
-      const analytics = await DatabaseService.getBooleanSetting(
-        'allow_analytics',
-      );
-      const messages = await DatabaseService.getBooleanSetting(
-        'allow_messages',
-      );
+      // Проверяем, инициализирована ли БД
+      try {
+        const analytics = await DatabaseService.getBooleanSetting(
+          'allow_analytics',
+        );
+        const messages = await DatabaseService.getBooleanSetting(
+          'allow_messages',
+        );
 
-      // ИСПРАВЛЕНО: убрана лишняя запятая
-      console.log('[SettingsContext] Loaded settings:', {analytics, messages});
+        console.log('[SettingsContext] Loaded settings:', {
+          analytics,
+          messages,
+        });
 
-      setAllowAnalytics(analytics);
-      setAllowMessages(messages);
+        setAllowAnalytics(analytics);
+        setAllowMessages(messages);
+        setIsInitialized(true);
 
-      // Если уведомления включены в настройках - планируем их
-      if (messages) {
-        console.log('[SettingsContext] Initializing notifications...');
-        NotificationService.initialize();
-        await NotificationService.scheduleDailyNotification();
+        // Если уведомления включены в настройках - планируем их
+        if (messages) {
+          console.log('[SettingsContext] Initializing notifications...');
+          NotificationService.initialize();
+          await NotificationService.scheduleDailyNotification();
+        }
+      } catch (error) {
+        console.error('[SettingsContext] Error loading settings:', error);
+
+        // Если ошибка инициализации БД, пробуем снова до 3 раз
+        if (retryCount < 3) {
+          console.log(`[SettingsContext] Retrying... (${retryCount + 1}/3)`);
+          setTimeout(() => loadSettings(retryCount + 1), 1000);
+        } else {
+          // Если все попытки неудачны, используем значения по умолчанию
+          console.log('[SettingsContext] Using default settings after retries');
+          setAllowAnalytics(true);
+          setAllowMessages(true);
+          setIsInitialized(true);
+        }
       }
-    } catch (error) {
-      console.error('[SettingsContext] Error loading settings:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // Пустой массив зависимостей, так как функция не использует внешние переменные
 
   useEffect(() => {
     loadSettings();
-  }, []);
+  }, [loadSettings]); // Теперь можно добавить loadSettings в зависимости
 
-  const testNotification = async () => {
+  const testNotification = useCallback(async () => {
     try {
       console.log('[SettingsContext] Testing notification...');
       NotificationService.showTestNotification();
     } catch (error) {
       console.error('[SettingsContext] Test notification error:', error);
     }
-  };
+  }, []);
 
-  const updateSetting = async (key: string, value: boolean) => {
+  const updateSetting = useCallback(async (key: string, value: boolean) => {
     try {
       console.log(`[SettingsContext] Updating setting: ${key} = ${value}`);
 
-      // Сохраняем в БД
       await DatabaseService.saveSetting(key, value.toString());
 
       if (key === 'allow_analytics') {
-        // Обновляем Firebase Analytics
         await FirebaseService.setAnalyticsEnabled(value);
         setAllowAnalytics(value);
 
-        // Логируем событие только если включаем аналитику
         if (value) {
           await FirebaseService.logEvent('analytics_enabled');
         }
       } else if (key === 'allow_messages') {
         if (value) {
-          // Включаем уведомления
           console.log('[SettingsContext] Enabling notifications...');
-
-          // Инициализируем и планируем уведомления
           NotificationService.initialize();
           await NotificationService.scheduleDailyNotification();
 
-          console.log('[SettingsContext] Notifications enabled and scheduled');
-
-          // Логируем включение
           if (FirebaseService.isAnalyticsEnabled()) {
             await FirebaseService.logEvent('notifications_enabled');
           }
         } else {
-          // Выключаем уведомления
           console.log('[SettingsContext] Disabling notifications...');
           await NotificationService.cancelAll();
 
-          console.log('[SettingsContext] All notifications cancelled');
-
-          // Логируем выключение
           if (FirebaseService.isAnalyticsEnabled()) {
             await FirebaseService.logEvent('notifications_disabled');
           }
@@ -130,14 +139,12 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
     } catch (error) {
       console.error('[SettingsContext] Error updating setting:', error);
 
-      // Откатываем UI состояние при ошибке
       if (key === 'allow_analytics') {
         setAllowAnalytics(!value);
       } else if (key === 'allow_messages') {
         setAllowMessages(!value);
       }
 
-      // Логируем ошибку если аналитика включена
       if (FirebaseService.isAnalyticsEnabled()) {
         await FirebaseService.logEvent('setting_update_error', {
           key,
@@ -146,17 +153,17 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
         });
       }
     }
-  };
+  }, []);
 
-  const refreshSettings = async () => {
+  const refreshSettings = useCallback(async () => {
     await loadSettings();
-  };
+  }, [loadSettings]);
 
   const contextValue: SettingsContextType = {
     allowAnalytics,
     allowMessages,
     updateSetting,
-    isLoading,
+    isLoading: isLoading || !isInitialized,
     refreshSettings,
     testNotification,
   };
